@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin ABCSoft Lab • ORE</title>
+    <link rel="stylesheet" href="/admin/assets/app.css" />
+    <!-- Supabase JS (browser) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="/admin/assets/config.js"></script>
+  </head>
+
+  <body>
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="login-wrap" style="display:none">
+      <div class="card login-card">
+        <div class="title">Bem-vindo ao Admin ABCSoft Lab</div>
+        <div class="subtitle">
+          Entre com seu e-mail e senha de admin para gerenciar usuários do ORE.
+          <span class="muted small">Se der “Forbidden”, seu usuário não está em <span class="kbd">public.admins</span>.</span>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div class="field" style="flex:1;min-width:240px">
+            <label>E-mail</label>
+            <input id="adminEmail" placeholder="admin@abcsoftlab.com.br" autocomplete="email" />
+          </div>
+          <div class="field" style="flex:1;min-width:240px">
+            <label>Senha</label>
+            <input id="adminPass" type="password" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <button id="loginBtn" class="btn" style="min-width:140px">Login</button>
+        </div>
+
+        <div id="authError" class="error"></div>
+        <div id="authOk" class="ok"></div>
+      </div>
+    </div>
+
+    <!-- APP VIEW -->
+    <div id="appView" class="container" style="display:none">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-badge">A</div>
+          <div>
+            <div class="brand-title">ABCSoft Lab</div>
+            <div class="muted small">Admin • ORE</div>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a href="#/" data-route="home" class="active">Home</a>
+          <a href="#/reports" data-route="reports">Relatórios</a>
+          <a href="#/finance" data-route="finance">Financeiro</a>
+          <a href="#/settings" data-route="settings">Configurações</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="ore-badge">O</div>
+            <div style="font-weight:900">ORE</div>
+          </div>
+          <div class="topbar-right">
+            <div id="sessionInfo" class="chip">—</div>
+            <button id="logoutBtn" class="btn secondary">Sair</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <!-- HOME -->
+          <section id="routeHome" class="card">
+            <div class="row" style="align-items:center;justify-content:space-between">
+              <div>
+                <div class="title">Usuários</div>
+                <div class="subtitle">Busca instantânea por <b>nome</b>, <b>CNPJ</b> e <b>razão social</b>.</div>
+              </div>
+              <button id="newUserBtn" class="btn" title="Novo usuário">+</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row">
+              <div class="field" style="flex:1;min-width:260px">
+                <label>Pesquisar</label>
+                <input id="searchInput" placeholder="Digite para filtrar..." />
+              </div>
+              <div class="field" style="min-width:200px">
+                <label>Filtro (exemplo)</label>
+                <input id="filterMinCredits" placeholder="Créditos ≥ (opcional)" inputmode="numeric" />
+              </div>
+              <button id="refreshBtn" class="btn secondary">Atualizar</button>
+              <div style="flex:1"></div>
+              <div id="statusText" class="muted small"></div>
+            </div>
+
+            <div id="errorText" class="error"></div>
+            <div id="okText" class="ok"></div>
+
+            <div class="tablewrap" style="margin-top:12px">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>CNPJ</th>
+                    <th>Razão Social</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Créditos</th>
+                    <th>Criado em</th>
+                    <th>Último login</th>
+                    <th>ID</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTbody">
+                  <tr><td colspan="10" class="muted">Carregando…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PLACEHOLDERS -->
+          <section id="routeReports" class="card" style="display:none">
+            <div class="title">Relatórios</div>
+            <div class="subtitle">Em construção.</div>
+          </section>
+
+          <section id="routeFinance" class="card" style="display:none">
+            <div class="title">Financeiro</div>
+            <div class="subtitle">Em construção.</div>
+          </section>
+
+          <section id="routeSettings" class="card" style="display:none">
+            <div class="title">Configurações</div>
+            <div class="subtitle">Em construção.</div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- DRAWER -->
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <div id="drawerTitle" class="title">Usuário</div>
+          <div id="drawerSubtitle" class="subtitle">—</div>
+        </div>
+        <button id="drawerCloseBtn" class="btn secondary">Fechar</button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="field">
+          <label>Nome</label>
+          <input id="fName" />
+        </div>
+
+        <div class="field">
+          <label>CNPJ</label>
+          <input id="fCnpj" />
+        </div>
+
+        <div class="field">
+          <label>Razão social</label>
+          <input id="fRazao" />
+        </div>
+
+        <div class="field">
+          <label>E-mail</label>
+          <input id="fEmail" />
+        </div>
+
+        <div class="field">
+          <label>Telefone (opcional)</label>
+          <input id="fPhone" placeholder="(11) 99999-9999" />
+        </div>
+
+        <div class="row">
+          <div class="field" style="flex:1;min-width:160px">
+            <label>Créditos</label>
+            <input id="fCredits" inputmode="numeric" />
+          </div>
+          <div class="field" style="flex:1;min-width:160px">
+            <label>Senha (criar)</label>
+            <input id="fPass" type="password" placeholder="mínimo 6" />
+          </div>
+        </div>
+
+        <div class="subtitle muted small" style="margin-top:4px">
+          • Para teste, a edição de <b>nome/CNPJ/razão/e-mail</b> depende de suporte no backend.
+          Créditos funcionam via <span class="kbd">adjust_credits</span>.
+        </div>
+
+        <div id="drawerError" class="error"></div>
+        <div id="drawerOk" class="ok"></div>
+
+        <div class="row" style="margin-top:6px">
+          <button id="drawerSaveBtn" class="btn">Salvar</button>
+          <button id="drawerResetPassBtn" class="btn secondary" disabled title="Vamos ativar depois">
+            Resetar senha (inativo)
+          </button>
+          <div style="flex:1"></div>
+          <button id="drawerDeleteBtn" class="btn danger" style="display:none">Excluir</button>
+        </div>
+      </div>
+    </aside>
+
+    <script src="/admin/assets/app.js"></script>
+  </body>
+</html>
