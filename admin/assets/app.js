@@ -208,8 +208,6 @@
         <td>
           <div class="actions">
             <button class="btn secondary" data-edit="${u.id}">Editar</button>
-            <button class="btn secondary" data-add="${u.id}">+10</button>
-            <button class="btn secondary" data-sub="${u.id}">-10</button>
             <button class="btn danger" data-del="${u.id}">Excluir</button>
           </div>
         </td>
