@@ -1,131 +1,69 @@
-* {
-  box-sizing: border-box;
-  font-family: Inter, Arial, sans-serif;
-}
-
-body {
-  margin: 0;
-  background: #f4f6f8;
-  color: #1e293b;
-}
-
-/* LOGIN */
-.login-container {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-card {
-  background: #fff;
-  width: 360px;
-  padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.1);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
+/* Logo do login: tamanho controlado */
 .login-logo {
-  width: 180px;
+  width: 160px;
+  max-width: 70%;
+  height: auto;
+  display: block;
   margin: 0 auto 8px;
 }
 
-.login-card input {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-}
-
-.password-wrapper {
-  position: relative;
-}
-
-#toggle-password {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.login-card button {
-  background: #1e3a8a;
-  color: #fff;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.forgot {
-  text-align: center;
+/* Erro no login */
+.login-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 10px;
   font-size: 13px;
-  color: #64748b;
-  cursor: pointer;
 }
+.login-error.hidden { display: none; }
 
-/* APP */
-.hidden { display: none; }
-
-.app {
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  height: 100vh;
-}
-
-.sidebar {
-  background: linear-gradient(180deg,#0f766e,#065f46);
+/* Loading overlay + blur */
+.loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(6px);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding-top: 24px;
-  gap: 24px;
-  color: #fff;
+  justify-content: center;
+  z-index: 9999;
 }
+.loading.hidden { display: none; }
 
-.project {
-  cursor: pointer;
-  opacity: .6;
-}
-.project.active { opacity: 1; }
-
-.main {
+.loading-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.18);
+  padding: 18px 20px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 220px;
 }
 
-.topbar {
-  background: #1e3a8a;
-  color: #fff;
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 24px;
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(15,23,42,.18);
+  border-top-color: rgba(30,58,138,1);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
 }
 
-.tabs .tab {
-  background: transparent;
-  border: none;
-  color: #fff;
-  margin-right: 16px;
-  opacity: .7;
-  cursor: pointer;
-}
-.tabs .tab.active { opacity: 1; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.user button {
-  margin-left: 16px;
-  background: #ef4444;
-  border: none;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
+body.blurred #app,
+body.blurred #login-screen {
+  filter: blur(2px);
+  pointer-events: none;
 }
 
-.content {
-  padding: 32px;
+/* Transição sutil */
+.fade-in {
+  animation: fadeIn 160ms ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -4,22 +4,31 @@
   <meta charset="UTF-8" />
   <title>ABCSoft Lab – Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./assets/app.css" />
+  <link rel="stylesheet" href="/admin/assets/app.css" />
 </head>
 <body>
+
+<!-- LOADING OVERLAY -->
+<div id="loading" class="loading hidden">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <div class="loading-text">Sincronizando...</div>
+  </div>
+</div>
 
 <!-- LOGIN -->
 <div id="login-screen" class="login-container">
   <div class="login-card">
-    <img src="./assets/abcsoft_logo.png" class="login-logo" alt="ABCSoft Lab" />
+    <img src="/admin/assets/abcsoft_logo.png" class="login-logo" alt="ABCSoft Lab" />
 
-    <input id="login-email" type="email" placeholder="Email" />
+    <input id="login-email" type="email" placeholder="Email" autocomplete="username" />
     <div class="password-wrapper">
-      <input id="login-password" type="password" placeholder="Senha" />
-      <button id="toggle-password" type="button">👁</button>
+      <input id="login-password" type="password" placeholder="Senha" autocomplete="current-password" />
+      <button id="toggle-password" type="button" aria-label="Mostrar senha">👁</button>
     </div>
 
-    <button id="login-btn">Entrar</button>
+    <button id="login-btn" type="button">Entrar</button>
+    <div id="login-error" class="login-error hidden"></div>
     <span class="forgot">Esqueci minha senha</span>
   </div>
 </div>
@@ -27,32 +36,41 @@
 <!-- DASHBOARD -->
 <div id="app" class="app hidden">
   <aside class="sidebar">
-    <div class="project active">ORE</div>
-    <div class="project">CONSCIO</div>
-    <div class="project">AUTOMA</div>
+    <div class="project active" data-project="ore">ORE</div>
+    <div class="project" data-project="conscio">CON</div>
+    <div class="project" data-project="automa">AUT</div>
   </aside>
 
   <main class="main">
     <header class="topbar">
       <div class="tabs">
-        <button class="tab active">Usuários</button>
-        <button class="tab">Relatórios</button>
-        <button class="tab">Finanças</button>
-        <button class="tab">Gestão</button>
+        <button class="tab active" data-area="users">Usuários</button>
+        <button class="tab" data-area="reports">Relatórios</button>
+        <button class="tab" data-area="finance">Finanças</button>
+        <button class="tab" data-area="settings">Gestão</button>
       </div>
       <div class="user">
-        Lucas M Battestin
-        <button id="logout">Sair</button>
+        <span id="user-label">—</span>
+        <button id="logout" type="button">Sair</button>
       </div>
     </header>
 
     <section class="content">
-      <h2>Usuários</h2>
-      <p>Conteúdo carregado do Supabase.</p>
+      <div class="page fade-in" id="page">
+        <h2>Usuários</h2>
+        <p>Conectado ao Supabase.</p>
+      </div>
     </section>
   </main>
 </div>
 
-<script src="./assets/app.js"></script>
+<!-- 1) CONFIG (SEMPRE ANTES) -->
+<script src="/admin/assets/config.js"></script>
+
+<!-- 2) SUPABASE SDK (SEMPRE ANTES) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 3) APP -->
+<script src="/admin/assets/app.js"></script>
 </body>
 </html>
