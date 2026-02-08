@@ -1,141 +1,58 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ABCSoft Lab Admin</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <meta charset="UTF-8" />
+  <title>ABCSoft Lab – Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./assets/app.css" />
 </head>
 <body>
-  <div class="bg-waves" aria-hidden="true"></div>
 
-  <div id="app">
-    <!-- AUTH -->
-    <section id="auth" class="auth-wrap">
-      <div class="auth-card fade">
-        <div class="brand">
-          <!-- Suba sua logo e ajuste o src abaixo -->
-          <img src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" onerror="this.style.display='none'" />
-          <div>
-            <p class="title">Bem-vindo ao Admin</p>
-            <p class="subtitle">ABCSoft Lab • acesso restrito</p>
-          </div>
-        </div>
+<!-- LOGIN -->
+<div id="login-screen" class="login-container">
+  <div class="login-card">
+    <img src="./assets/abcsoft_logo.png" class="login-logo" alt="ABCSoft Lab" />
 
-        <div class="field">
-          <p class="label">E-mail</p>
-          <input id="loginEmail" class="input" type="email" autocomplete="email" placeholder="seuemail@abcsoftlab.com.br" />
-        </div>
-
-        <div class="field">
-          <p class="label">Senha</p>
-          <div class="pass-wrap">
-            <input id="loginPass" class="input" type="password" autocomplete="current-password" placeholder="Sua senha" />
-            <button id="togglePass" class="pass-toggle" type="button">Ver</button>
-          </div>
-        </div>
-
-        <button id="loginBtn" class="btn" type="button">Entrar</button>
-
-        <div id="authError" class="error"></div>
-
-        <div class="auth-foot">
-          <a class="link" href="javascript:void(0)" onclick="alert('Reset de senha: vamos ativar depois via Supabase.')">Esqueci minha senha</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- DASHBOARD -->
-    <section id="shell" class="shell" style="display:none">
-      <aside class="sidebar">
-        <div class="side-brand">
-          <img src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" onerror="this.style.display='none'" />
-          <div class="name">ABCSoft Lab</div>
-        </div>
-
-        <div class="proj" aria-label="Projetos">
-          <button class="proj-btn active" data-project="ORE" title="ORE"><span>ORE</span></button>
-          <button class="proj-btn" data-project="CONSCIO" title="CONSCIO"><span>CON</span></button>
-          <button class="proj-btn" data-project="AUTOMA" title="AUTOMA"><span>AUT</span></button>
-        </div>
-
-        <div style="flex:1"></div>
-
-        <div class="proj" aria-label="Atalhos (em breve)" style="opacity:.65">
-          <button class="proj-btn" title="Notificações (em breve)"><span>🔔</span></button>
-          <button class="proj-btn" title="Relatórios (em breve)"><span>📊</span></button>
-          <button class="proj-btn" title="Config (em breve)"><span>⚙️</span></button>
-        </div>
-      </aside>
-
-      <header class="topbar">
-        <div class="left">
-          <span class="pill">Projeto: <strong id="projectPill" style="margin-left:6px">ORE</strong></span>
-
-          <nav class="tabs" aria-label="Pastas">
-            <button class="tab active" data-folder="USUARIOS">Usuários</button>
-            <button class="tab" data-folder="RELATORIOS">Relatórios</button>
-            <button class="tab" data-folder="FINANCEIRO">Financeiro</button>
-            <button class="tab" data-folder="GESTAO">Gestão</button>
-          </nav>
-        </div>
-
-        <div class="userbox">
-          <div class="email" id="userEmail">—</div>
-          <button id="logoutBtn" class="logout" type="button">Sair</button>
-        </div>
-      </header>
-
-      <main class="main fade">
-        <section class="card">
-          <div class="card-hd">
-            <div>
-              <h3 class="h-title">Usuários</h3>
-              <p class="h-sub">Busca instantânea por nome, CNPJ e razão social.</p>
-            </div>
-            <div class="actions">
-              <input id="searchInput" class="search" placeholder="Digite para filtrar…" />
-              <button id="newBtn" class="primary" type="button">+ Novo</button>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>CNPJ</th>
-                  <th>Razão Social</th>
-                  <th>E-mail</th>
-                  <th>Telefone</th>
-                  <th>Créditos</th>
-                  <th>Criado em</th>
-                  <th>Último login</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="usersBody">
-                <tr><td class="muted" colspan="9">Carregando…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
-    </section>
-  </div>
-
-  <!-- overlay -->
-  <div id="overlay" class="overlay" aria-live="polite" aria-busy="true">
-    <div style="display:flex; flex-direction:column; align-items:center">
-      <div class="spinner"></div>
-      <div id="overlayText" class="txt">Sincronizando…</div>
+    <input id="login-email" type="email" placeholder="Email" />
+    <div class="password-wrapper">
+      <input id="login-password" type="password" placeholder="Senha" />
+      <button id="toggle-password" type="button">👁</button>
     </div>
-  </div>
 
-  <!-- deps -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./assets/config.js"></script>
-  <script src="./assets/app.js"></script>
+    <button id="login-btn">Entrar</button>
+    <span class="forgot">Esqueci minha senha</span>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="project active">ORE</div>
+    <div class="project">CONSCIO</div>
+    <div class="project">AUTOMA</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="tabs">
+        <button class="tab active">Usuários</button>
+        <button class="tab">Relatórios</button>
+        <button class="tab">Finanças</button>
+        <button class="tab">Gestão</button>
+      </div>
+      <div class="user">
+        Lucas M Battestin
+        <button id="logout">Sair</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <h2>Usuários</h2>
+      <p>Conteúdo carregado do Supabase.</p>
+    </section>
+  </main>
+</div>
+
+<script src="./assets/app.js"></script>
 </body>
 </html>
