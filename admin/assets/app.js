@@ -1,489 +1,340 @@
-// admin/assets/app.js
+/* admin/assets/app.js */
 (() => {
-  const cfg = window.ORE_ADMIN_CONFIG || {};
-  const SUPABASE_URL = cfg.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = cfg.SUPABASE_ANON_KEY;
+  const $ = (s, el=document) => el.querySelector(s);
+  const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    document.body.innerHTML = "<pre style='color:#ff6b6b'>Config do Supabase ausente. Confira admin/assets/config.js</pre>";
-    return;
+  // ---- config
+  const cfg = window.ABC_ADMIN_CONFIG || {};
+  const SUPABASE_URL = cfg.SUPABASE_URL || "";
+  const SUPABASE_ANON_KEY = cfg.SUPABASE_ANON_KEY || "";
+
+  // ---- supabase client (CDN)
+  const supabase = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (!supabase) {
+    console.error("[abc-admin] Supabase client not available. Check CDN import.");
   }
 
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // ---- UI refs
+  const elAuth = $("#auth");
+  const elShell = $("#shell");
+  const elOverlay = $("#overlay");
+  const elErr = $("#authError");
+  const elEmail = $("#loginEmail");
+  const elPass = $("#loginPass");
+  const elPassToggle = $("#togglePass");
+  const elLoginBtn = $("#loginBtn");
 
-  // ---------- helpers ----------
-  const $ = (id) => document.getElementById(id);
-  const setText = (id, txt) => ($(id).textContent = txt || "");
-  const setErr = (id, txt) => setText(id, txt);
-  const setOk = (id, txt) => setText(id, txt);
+  const elUserEmail = $("#userEmail");
+  const elLogoutBtn = $("#logoutBtn");
+  const elProjectPill = $("#projectPill");
 
-  const onlyDigits = (v) => String(v || "").replace(/\D/g, "");
+  const elProjectBtns = $$(".proj-btn");
+  const elTabs = $$(".tab");
 
-  const maskCnpj = (v) => {
-    const d = onlyDigits(v).slice(0, 14);
-    if (!d) return "";
-    const p = d.padEnd(14, "_");
-    return `${p.slice(0, 2)}.${p.slice(2, 5)}.${p.slice(5, 8)}/${p.slice(8, 12)}-${p.slice(12, 14)}`.replace(/_/g, "");
+  const elSearch = $("#searchInput");
+  const elNewBtn = $("#newBtn");
+  const elTbody = $("#usersBody");
+
+  const STATE = {
+    session: null,
+    project: "ORE",
+    folder: "USUARIOS",
+    users: [],
+    filtered: [],
+    loading: false,
   };
 
-  const maskPhoneBR = (v) => {
-    const d = onlyDigits(v).slice(0, 11);
-    if (!d) return "";
-    if (d.length <= 10) {
-      const a = d.slice(0, 2);
-      const b = d.slice(2, 6);
-      const c = d.slice(6, 10);
-      return `(${a}) ${b}${c ? "-" + c : ""}`.trim();
+  // ---- helpers
+  function showOverlay(show, text) {
+    if (!elOverlay) return;
+    elOverlay.classList.toggle("show", !!show);
+    if (text) $("#overlayText").textContent = text;
+  }
+
+  function setAuthView(isAuthed) {
+    elAuth.style.display = isAuthed ? "none" : "block";
+    elShell.style.display = isAuthed ? "grid" : "none";
+    if (!isAuthed) {
+      elEmail.value = elEmail.value || "";
+      elPass.value = "";
     }
-    const a = d.slice(0, 2);
-    const b = d.slice(2, 7);
-    const c = d.slice(7, 11);
-    return `(${a}) ${b}${c ? "-" + c : ""}`.trim();
-  };
-
-  const fmtBR = (iso) => {
-    try {
-      return iso ? new Date(iso).toLocaleString("pt-BR") : "";
-    } catch {
-      return "";
-    }
-  };
-
-  const fnUrl = () => {
-    const functionsBase = SUPABASE_URL.replace(".supabase.co", ".functions.supabase.co");
-    return `${functionsBase}/functions/v1/admin`;
-  };
-
-  async function callAdmin(method, path = "", body) {
-    const { data: sessData } = await sb.auth.getSession();
-    const accessToken = sessData?.session?.access_token;
-    if (!accessToken) throw new Error("Sem sessão");
-
-    const endpoint = fnUrl() + path;
-    const res = await fetch(endpoint, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || json?.ok === false) {
-      throw new Error(json?.message || `Erro ${res.status}`);
-    }
-    return json;
   }
 
-  // ---------- state ----------
-  let users = [];
-  let editing = null; // user object or {id:""} for new
-
-  // ---------- routing ----------
-  function setRoute(route) {
-    const map = {
-      home: "routeHome",
-      reports: "routeReports",
-      finance: "routeFinance",
-      settings: "routeSettings",
-    };
-    Object.keys(map).forEach((k) => {
-      $(map[k]).style.display = k === route ? "block" : "none";
-    });
-
-    document.querySelectorAll(".nav a[data-route]").forEach((a) => {
-      a.classList.toggle("active", a.getAttribute("data-route") === route);
-    });
-  }
-
-  function syncRouteFromHash() {
-    const h = (location.hash || "#/").replace("#/", "");
-    const route = h || "home";
-    setRoute(route);
-  }
-
-  window.addEventListener("hashchange", syncRouteFromHash);
-
-  // ---------- UI switching ----------
-  function showLogin() {
-    $("loginView").style.display = "flex";
-    $("appView").style.display = "none";
-  }
-
-  function showApp(email) {
-    $("loginView").style.display = "none";
-    $("appView").style.display = "flex";
-    $("sessionInfo").textContent = email || "—";
-    syncRouteFromHash();
-  }
-
-  // ---------- drawer ----------
-  function openDrawer(mode, user) {
-    // mode: "new" | "edit"
-    editing = user || null;
-
-    setErr("drawerError", "");
-    setOk("drawerOk", "");
-
-    $("drawerTitle").textContent = mode === "new" ? "Novo usuário" : "Editar usuário";
-    $("drawerSubtitle").textContent = mode === "new" ? "Preencha os dados e crie o usuário." : (user?.id || "—");
-
-    // populate
-    $("fName").value = user?.name || "";
-    $("fCnpj").value = user?.cnpj || "";
-    $("fRazao").value = user?.razaoSocial || "";
-    $("fEmail").value = user?.email || "";
-    $("fPhone").value = user?.phone || "";
-    $("fCredits").value = String(user?.balance ?? user?.credits ?? 0);
-    $("fPass").value = "";
-
-    $("drawerDeleteBtn").style.display = mode === "edit" ? "inline-block" : "none";
-
-    $("drawerBackdrop").classList.add("open");
-    $("drawer").classList.add("open");
-    $("drawer").setAttribute("aria-hidden", "false");
-  }
-
-  function closeDrawer() {
-    $("drawerBackdrop").classList.remove("open");
-    $("drawer").classList.remove("open");
-    $("drawer").setAttribute("aria-hidden", "true");
-    editing = null;
-  }
-
-  // ---------- users rendering ----------
-  function applyFilters(list) {
-    const q = ($("searchInput").value || "").trim().toLowerCase();
-    const minCreditsStr = ($("filterMinCredits").value || "").trim();
-    const minCredits = minCreditsStr ? Number(minCreditsStr) : null;
-
-    return list.filter((u) => {
-      const name = String(u.name || "").toLowerCase();
-      const razao = String(u.razaoSocial || "").toLowerCase();
-      const cnpj = onlyDigits(u.cnpj || "");
-      const email = String(u.email || "").toLowerCase();
-
-      const hit =
-        !q ||
-        name.includes(q) ||
-        razao.includes(q) ||
-        cnpj.includes(onlyDigits(q)) ||
-        email.includes(q);
-
-      const credits = Number(u.balance ?? u.credits ?? 0) || 0;
-      const hitCredits = minCredits == null ? true : credits >= minCredits;
-
-      return hit && hitCredits;
-    });
-  }
-
-  function renderUsers() {
-    const tbody = $("usersTbody");
-    const list = applyFilters(users);
-
-    if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="muted">Nenhum usuário encontrado.</td></tr>`;
+  function setError(msg) {
+    if (!elErr) return;
+    if (!msg) {
+      elErr.style.display = "none";
+      elErr.textContent = "";
       return;
     }
+    elErr.style.display = "block";
+    elErr.textContent = msg;
+  }
 
-    tbody.innerHTML = "";
-    for (const u of list) {
-      const tr = document.createElement("tr");
-      const createdStr = fmtBR(u.createdAt);
-      const lastStr = fmtBR(u.lastSignInAt);
+  function fmtDateBR(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("pt-BR");
+  }
 
-      const credits = Number(u.balance ?? u.credits ?? 0) || 0;
+  function maskEmail(email) {
+    if (!email || !email.includes("@")) return "—";
+    const [u, d] = email.split("@");
+    const u2 = u.length <= 2 ? u[0] + "*" : u.slice(0,2) + "*".repeat(Math.min(6, u.length-2));
+    return `${u2}@${d}`;
+  }
 
-      tr.innerHTML = `
-        <td>${escapeHtml(u.name || "")}</td>
-        <td>${escapeHtml(maskCnpj(u.cnpj || ""))}</td>
-        <td>${escapeHtml(u.razaoSocial || "")}</td>
-        <td>${escapeHtml(u.email || "")}</td>
-        <td>${escapeHtml(maskPhoneBR(u.phone || "")) || "-"}</td>
-        <td><span class="pill">${credits}</span></td>
-        <td>${createdStr || "-"}</td>
-        <td class="muted">${lastStr || "-"}</td>
-        <td class="muted small">${escapeHtml(u.id || "")}</td>
-        <td>
-          <div class="actions">
-            <button class="btn secondary" data-edit="${u.id}">Editar</button>
-            <button class="btn danger" data-del="${u.id}">Excluir</button>
-          </div>
-        </td>
+  function onlyDigits(s){ return String(s || "").replace(/\D+/g, ""); }
+
+  function maskPhone(phone) {
+    const d = onlyDigits(phone);
+    if (!d) return "—";
+    // BR: 11 digits => (XX) XXXXX-XXXX
+    if (d.length >= 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7,11)}`;
+    if (d.length >= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6,10)}`;
+    return d;
+  }
+
+  function maskCNPJ(cnpj) {
+    const d = onlyDigits(cnpj);
+    if (!d) return "—";
+    const x = d.padStart(14,"0").slice(0,14);
+    return `${x.slice(0,2)}.${x.slice(2,5)}.${x.slice(5,8)}/${x.slice(8,12)}-${x.slice(12,14)}`;
+  }
+
+  function safe(s){ return (s ?? "").toString(); }
+
+  function render() {
+    // topbar
+    elProjectPill.textContent = STATE.project;
+    elUserEmail.textContent = STATE.session?.user?.email || "—";
+
+    // tabs
+    elTabs.forEach(btn => {
+      const key = btn.getAttribute("data-folder");
+      btn.classList.toggle("active", key === STATE.folder);
+    });
+
+    // projects
+    elProjectBtns.forEach(btn => {
+      const key = btn.getAttribute("data-project");
+      btn.classList.toggle("active", key === STATE.project);
+    });
+
+    // content
+    if (STATE.project !== "ORE" || STATE.folder !== "USUARIOS") {
+      // placeholder
+      elTbody.innerHTML = `
+        <tr><td class="muted" colspan="9">Em construção para ${STATE.project} / ${STATE.folder}.</td></tr>
       `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  function escapeHtml(s) {
-    return String(s ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  // ---------- data loading ----------
-  async function loadUsers() {
-    setErr("errorText", "");
-    setOk("okText", "");
-    $("refreshBtn").disabled = true;
-    $("usersTbody").innerHTML = `<tr><td colspan="10" class="muted">Carregando…</td></tr>`;
-
-    try {
-      const data = await callAdmin("GET");
-      users = Array.isArray(data.users) ? data.users : [];
-      renderUsers();
-      setText(
-        "statusText",
-        "Última atualização: " + new Date().toLocaleTimeString("pt-BR", { hour12: false })
-      );
-    } catch (e) {
-      setErr("errorText", e.message || String(e));
-      $("usersTbody").innerHTML = `<tr><td colspan="10" class="muted">Falha ao carregar.</td></tr>`;
-    } finally {
-      $("refreshBtn").disabled = false;
-    }
-  }
-
-  // ---------- actions ----------
-  async function login() {
-    setErr("authError", "");
-    setOk("authOk", "");
-
-    const email = ($("adminEmail").value || "").trim();
-    const password = $("adminPass").value || "";
-
-    if (!email || !password) {
-      setErr("authError", "Informe e-mail e senha do admin");
       return;
     }
 
-    try {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
-      if (error || !data.session) throw new Error(error?.message || "Falha no login");
-
-      localStorage.setItem("ORE_ADMIN_EMAIL_LAST", email);
-      showApp(email);
-      setOk("authOk", "Logado.");
-
-      await loadUsers();
-    } catch (e) {
-      setErr("authError", e.message || String(e));
+    const rows = (STATE.filtered.length ? STATE.filtered : STATE.users);
+    if (!rows.length) {
+      elTbody.innerHTML = `<tr><td class="muted" colspan="9">Nenhum usuário encontrado.</td></tr>`;
+      return;
     }
+
+    elTbody.innerHTML = rows.map(u => {
+      const name = safe(u.name || u.full_name || u.company_name || "—");
+      const cnpj = maskCNPJ(u.cnpj);
+      const razao = safe(u.razao_social || u.legal_name || "—");
+      const email = maskEmail(u.email || u.owner_email || u.user_email || "");
+      const phone = maskPhone(u.phone || u.telefone || "");
+      const credits = (u.credits ?? u.creditos ?? u.balance ?? "—");
+      const created = fmtDateBR(u.created_at || u.createdAt);
+      const last = fmtDateBR(u.last_login || u.lastLogin);
+      const id = safe(u.id || u.user_id || "");
+      return `
+        <tr>
+          <td>${name}</td>
+          <td>${cnpj}</td>
+          <td>${razao}</td>
+          <td>${email}</td>
+          <td>${phone}</td>
+          <td>${credits}</td>
+          <td>${created}</td>
+          <td>${last}</td>
+          <td>
+            <div class="t-actions">
+              <button class="iconbtn" data-act="edit" data-id="${id}">Editar</button>
+              <button class="iconbtn danger" data-act="del" data-id="${id}">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
   }
 
-  async function logout() {
-    try {
-      await sb.auth.signOut();
-    } catch {}
-    users = [];
-    showLogin();
+  function applySearch() {
+    const q = safe(elSearch.value).trim().toLowerCase();
+    if (!q) {
+      STATE.filtered = [];
+      render();
+      return;
+    }
+    // filter by name, cnpj, razao social
+    STATE.filtered = STATE.users.filter(u => {
+      const name = safe(u.name || u.full_name || u.company_name).toLowerCase();
+      const cnpj = onlyDigits(u.cnpj);
+      const razao = safe(u.razao_social || u.legal_name).toLowerCase();
+      const qd = onlyDigits(q);
+      return name.includes(q) || razao.includes(q) || (qd && cnpj.includes(qd));
+    });
+    render();
   }
 
-  async function adjustCredits(userId, delta) {
-    setErr("errorText", "");
-    setOk("okText", "");
+  async function fetchUsers() {
     try {
-      const data = await callAdmin("POST", "", {
-        action: "adjust_credits",
-        userId,
-        delta,
-        reason: "admin_web_v2",
+      showOverlay(true, "Sincronizando… Aguarde um instante.");
+      const token = STATE.session?.access_token;
+      if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+
+      const url = `${SUPABASE_URL}/functions/v1/admin`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
       });
-      setOk("okText", `Saldo atualizado: ${data.balance ?? "ok"}`);
-      await loadUsers();
-    } catch (e) {
-      setErr("errorText", e.message || String(e));
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`Falha ao listar usuários (${res.status}). ${t}`);
+      }
+      const data = await res.json();
+      STATE.users = Array.isArray(data) ? data : (data?.users || []);
+      STATE.filtered = [];
+      render();
+    } finally {
+      showOverlay(false);
     }
   }
 
-  async function deleteUser(userId) {
-    if (!confirm("Excluir este usuário?")) return;
-    setErr("errorText", "");
-    setOk("okText", "");
+  async function doLogin() {
     try {
-      await callAdmin("DELETE", `?userId=${encodeURIComponent(userId)}`);
-      setOk("okText", "Usuário excluído.");
-      await loadUsers();
-    } catch (e) {
-      setErr("errorText", e.message || String(e));
-    }
-  }
-
-  function findUserById(id) {
-    return users.find((u) => String(u.id) === String(id)) || null;
-  }
-
-  async function saveDrawer() {
-    setErr("drawerError", "");
-    setOk("drawerOk", "");
-    $("drawerSaveBtn").disabled = true;
-
-    try {
-      const name = ($("fName").value || "").trim();
-      const cnpj = ($("fCnpj").value || "").trim();
-      const razaoSocial = ($("fRazao").value || "").trim();
-      const email = ($("fEmail").value || "").trim();
-      const phone = ($("fPhone").value || "").trim();
-      const creditsNew = Number(($("fCredits").value || "0").trim() || 0) || 0;
-      const pass = $("fPass").value || "";
-
-      if (!name || !email) throw new Error("Preencha ao menos Nome e E-mail.");
-
-      // CREATE
-      if (!editing || !editing.id) {
-        if (!pass || pass.length < 6) throw new Error("Senha para novo usuário: mínimo 6 caracteres.");
-        const data = await callAdmin("POST", "", {
-          action: "create",
-          name,
-          email,
-          password: pass,
-          phone,
-          cnpj,
-          razaoSocial,
-        });
-
-        // Se backend já criar com crédito 0, ajusta para o valor desejado:
-        const newId = data?.user?.id || data?.userId || null;
-        if (newId && creditsNew > 0) {
-          await callAdmin("POST", "", {
-            action: "adjust_credits",
-            userId: newId,
-            delta: creditsNew,
-            reason: "admin_web_v2_init",
-          });
-        }
-
-        setOk("drawerOk", `Usuário criado: ${data.user?.email || email}`);
-        closeDrawer();
-        await loadUsers();
+      setError("");
+      showOverlay(true, "Entrando…");
+      const email = safe(elEmail.value).trim();
+      const password = safe(elPass.value);
+      if (!email || !password) {
+        setError("Informe e-mail e senha.");
         return;
       }
-
-      // EDIT
-      const cur = findUserById(editing.id);
-      const curCredits = Number(cur?.balance ?? cur?.credits ?? 0) || 0;
-      const delta = creditsNew - curCredits;
-
-      // Créditos (funcional)
-      if (delta !== 0) {
-        await callAdmin("POST", "", {
-          action: "adjust_credits",
-          userId: editing.id,
-          delta,
-          reason: "admin_web_v2_set",
-        });
-      }
-
-      // Outros campos: tenta, mas depende do backend
-      let profileUpdated = false;
-      try {
-        await callAdmin("POST", "", {
-          action: "update_profile",
-          userId: editing.id,
-          name,
-          email,
-          phone,
-          cnpj,
-          razaoSocial,
-        });
-        profileUpdated = true;
-      } catch (e) {
-        // se o backend não suportar, não quebra o fluxo
-        setOk(
-          "drawerOk",
-          "Créditos atualizados. Edição de dados pessoais depende do backend (action=update_profile não disponível)."
-        );
-      }
-
-      if (profileUpdated) {
-        setOk("drawerOk", "Usuário atualizado.");
-      }
-
-      closeDrawer();
-      await loadUsers();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      STATE.session = data.session;
+      setAuthView(true);
+      await fetchUsers();
     } catch (e) {
-      setErr("drawerError", e.message || String(e));
+      console.error(e);
+      setError(e?.message || "Falha ao entrar.");
+      setAuthView(false);
     } finally {
-      $("drawerSaveBtn").disabled = false;
+      showOverlay(false);
     }
   }
 
-  async function deleteDrawerUser() {
-    if (!editing?.id) return;
-    if (!confirm("Excluir este usuário?")) return;
-    $("drawerDeleteBtn").disabled = true;
+  async function doLogout() {
     try {
-      await deleteUser(editing.id);
-      closeDrawer();
+      showOverlay(true, "Saindo…");
+      await supabase.auth.signOut();
     } finally {
-      $("drawerDeleteBtn").disabled = false;
+      STATE.session = null;
+      setAuthView(false);
+      showOverlay(false);
     }
   }
 
-  // ---------- init ----------
-  async function init() {
-    // prefill
-    const last = localStorage.getItem("ORE_ADMIN_EMAIL_LAST") || "";
-    if (last) $("adminEmail").value = last;
+  // ---- events
+  elPassToggle?.addEventListener("click", () => {
+    const isPass = elPass.getAttribute("type") === "password";
+    elPass.setAttribute("type", isPass ? "text" : "password");
+    elPassToggle.textContent = isPass ? "Ocultar" : "Ver";
+  });
 
-    // auto session
-    const { data } = await sb.auth.getSession();
-    const session = data?.session;
+  elLoginBtn?.addEventListener("click", doLogin);
+  elPass?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
+  elEmail?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
 
-    if (session?.user?.email) {
-      showApp(session.user.email);
-      await loadUsers();
-    } else {
-      showLogin();
+  elLogoutBtn?.addEventListener("click", doLogout);
+
+  elProjectBtns.forEach(btn => btn.addEventListener("click", async () => {
+    STATE.project = btn.getAttribute("data-project");
+    // keep folder; only ORE/USUARIOS functional
+    render();
+    if (STATE.project === "ORE" && STATE.folder === "USUARIOS") await fetchUsers();
+  }));
+
+  elTabs.forEach(btn => btn.addEventListener("click", () => {
+    STATE.folder = btn.getAttribute("data-folder");
+    render();
+  }));
+
+  elSearch?.addEventListener("input", applySearch);
+
+  // table actions (delegation)
+  document.addEventListener("click", async (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const act = t.getAttribute("data-act");
+    if (!act) return;
+
+    const id = t.getAttribute("data-id");
+    if (!id) return;
+
+    if (act === "edit") {
+      alert("Edição detalhada: próximo passo (drawer lateral). Mantive só a base por enquanto.");
+      return;
     }
-
-    // events
-    $("loginBtn").addEventListener("click", login);
-    $("logoutBtn").addEventListener("click", logout);
-
-    $("refreshBtn").addEventListener("click", loadUsers);
-    $("searchInput").addEventListener("input", renderUsers);
-    $("filterMinCredits").addEventListener("input", renderUsers);
-
-    $("newUserBtn").addEventListener("click", () => openDrawer("new", { id: "" }));
-
-    $("drawerCloseBtn").addEventListener("click", closeDrawer);
-    $("drawerBackdrop").addEventListener("click", closeDrawer);
-    $("drawerSaveBtn").addEventListener("click", saveDrawer);
-    $("drawerDeleteBtn").addEventListener("click", deleteDrawerUser);
-
-    document.addEventListener("click", (ev) => {
-      const t = ev.target;
-      if (!(t instanceof HTMLElement)) return;
-
-      const add = t.getAttribute("data-add");
-      const sub = t.getAttribute("data-sub");
-      const del = t.getAttribute("data-del");
-      const edit = t.getAttribute("data-edit");
-
-      if (add) adjustCredits(add, 10);
-      if (sub) adjustCredits(sub, -10);
-      if (del) deleteUser(del);
-      if (edit) {
-        const u = findUserById(edit);
-        if (u) openDrawer("edit", u);
+    if (act === "del") {
+      const ok = confirm("Excluir este usuário? Isso não pode ser desfeito.");
+      if (!ok) return;
+      try{
+        showOverlay(true, "Excluindo…");
+        const token = STATE.session?.access_token;
+        const url = `${SUPABASE_URL}/functions/v1/admin?userId=${encodeURIComponent(id)}`;
+        const res = await fetch(url, { method:"DELETE", headers:{ "Authorization": `Bearer ${token}` }});
+        if (!res.ok) throw new Error(await res.text());
+        // refresh
+        await fetchUsers();
+      } catch(err){
+        alert(err?.message || "Falha ao excluir.");
+      } finally {
+        showOverlay(false);
       }
-    });
+      return;
+    }
+  });
 
-    sb.auth.onAuthStateChange((_event, sess) => {
-      if (sess?.user?.email) {
-        showApp(sess.user.email);
-      } else {
-        showLogin();
+  elNewBtn?.addEventListener("click", () => {
+    alert("Criar usuário: próximo passo (drawer lateral).");
+  });
+
+  // ---- boot
+  async function boot() {
+    // light theme, multi-project: no assumption about ORE only
+    setAuthView(false);
+    showOverlay(true, "Carregando…");
+    try {
+      const { data } = await supabase.auth.getSession();
+      STATE.session = data?.session || null;
+      if (!STATE.session) {
+        setAuthView(false);
+        return;
       }
-    });
-
-    syncRouteFromHash();
+      setAuthView(true);
+      await fetchUsers();
+    } catch (e) {
+      console.error(e);
+      setAuthView(false);
+    } finally {
+      showOverlay(false);
+    }
   }
 
-  init();
+  boot();
 })();

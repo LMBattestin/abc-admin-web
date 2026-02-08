@@ -1,214 +1,141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Admin ABCSoft Lab • ORE</title>
-    <link rel="stylesheet" href="/admin/assets/app.css" />
-    <!-- Supabase JS (browser) -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="/admin/assets/config.js"></script>
-  </head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ABCSoft Lab Admin</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="./assets/app.css" />
+</head>
+<body>
+  <div class="bg-waves" aria-hidden="true"></div>
 
-  <body>
-    <!-- LOGIN VIEW -->
-    <div id="loginView" class="login-wrap" style="display:none">
-      <div class="card login-card">
-        <div class="title">Bem-vindo ao Admin ABCSoft Lab</div>
-        <div class="subtitle">
-          Entre com seu e-mail e senha de admin para gerenciar usuários do ORE.
-          <span class="muted small">Se der “Forbidden”, seu usuário não está em <span class="kbd">public.admins</span>.</span>
+  <div id="app">
+    <!-- AUTH -->
+    <section id="auth" class="auth-wrap">
+      <div class="auth-card fade">
+        <div class="brand">
+          <!-- Suba sua logo e ajuste o src abaixo -->
+          <img src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" onerror="this.style.display='none'" />
+          <div>
+            <p class="title">Bem-vindo ao Admin</p>
+            <p class="subtitle">ABCSoft Lab • acesso restrito</p>
+          </div>
         </div>
 
-        <div class="hr"></div>
-
-        <div class="row">
-          <div class="field" style="flex:1;min-width:240px">
-            <label>E-mail</label>
-            <input id="adminEmail" placeholder="admin@abcsoftlab.com.br" autocomplete="email" />
-          </div>
-          <div class="field" style="flex:1;min-width:240px">
-            <label>Senha</label>
-            <input id="adminPass" type="password" placeholder="••••••••" autocomplete="current-password" />
-          </div>
-          <button id="loginBtn" class="btn" style="min-width:140px">Login</button>
+        <div class="field">
+          <p class="label">E-mail</p>
+          <input id="loginEmail" class="input" type="email" autocomplete="email" placeholder="seuemail@abcsoftlab.com.br" />
         </div>
+
+        <div class="field">
+          <p class="label">Senha</p>
+          <div class="pass-wrap">
+            <input id="loginPass" class="input" type="password" autocomplete="current-password" placeholder="Sua senha" />
+            <button id="togglePass" class="pass-toggle" type="button">Ver</button>
+          </div>
+        </div>
+
+        <button id="loginBtn" class="btn" type="button">Entrar</button>
 
         <div id="authError" class="error"></div>
-        <div id="authOk" class="ok"></div>
-      </div>
-    </div>
 
-    <!-- APP VIEW -->
-    <div id="appView" class="container" style="display:none">
+        <div class="auth-foot">
+          <a class="link" href="javascript:void(0)" onclick="alert('Reset de senha: vamos ativar depois via Supabase.')">Esqueci minha senha</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="shell" class="shell" style="display:none">
       <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-badge">A</div>
-          <div>
-            <div class="brand-title">ABCSoft Lab</div>
-            <div class="muted small">Admin • ORE</div>
-          </div>
+        <div class="side-brand">
+          <img src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" onerror="this.style.display='none'" />
+          <div class="name">ABCSoft Lab</div>
         </div>
 
-        <nav class="nav">
-          <a href="#/" data-route="home" class="active">Home</a>
-          <a href="#/reports" data-route="reports">Relatórios</a>
-          <a href="#/finance" data-route="finance">Financeiro</a>
-          <a href="#/settings" data-route="settings">Configurações</a>
-        </nav>
+        <div class="proj" aria-label="Projetos">
+          <button class="proj-btn active" data-project="ORE" title="ORE"><span>ORE</span></button>
+          <button class="proj-btn" data-project="CONSCIO" title="CONSCIO"><span>CON</span></button>
+          <button class="proj-btn" data-project="AUTOMA" title="AUTOMA"><span>AUT</span></button>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div class="proj" aria-label="Atalhos (em breve)" style="opacity:.65">
+          <button class="proj-btn" title="Notificações (em breve)"><span>🔔</span></button>
+          <button class="proj-btn" title="Relatórios (em breve)"><span>📊</span></button>
+          <button class="proj-btn" title="Config (em breve)"><span>⚙️</span></button>
+        </div>
       </aside>
 
-      <div class="main">
-        <header class="topbar">
-          <div class="topbar-left">
-            <div class="ore-badge">O</div>
-            <div style="font-weight:900">ORE</div>
+      <header class="topbar">
+        <div class="left">
+          <span class="pill">Projeto: <strong id="projectPill" style="margin-left:6px">ORE</strong></span>
+
+          <nav class="tabs" aria-label="Pastas">
+            <button class="tab active" data-folder="USUARIOS">Usuários</button>
+            <button class="tab" data-folder="RELATORIOS">Relatórios</button>
+            <button class="tab" data-folder="FINANCEIRO">Financeiro</button>
+            <button class="tab" data-folder="GESTAO">Gestão</button>
+          </nav>
+        </div>
+
+        <div class="userbox">
+          <div class="email" id="userEmail">—</div>
+          <button id="logoutBtn" class="logout" type="button">Sair</button>
+        </div>
+      </header>
+
+      <main class="main fade">
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h3 class="h-title">Usuários</h3>
+              <p class="h-sub">Busca instantânea por nome, CNPJ e razão social.</p>
+            </div>
+            <div class="actions">
+              <input id="searchInput" class="search" placeholder="Digite para filtrar…" />
+              <button id="newBtn" class="primary" type="button">+ Novo</button>
+            </div>
           </div>
-          <div class="topbar-right">
-            <div id="sessionInfo" class="chip">—</div>
-            <button id="logoutBtn" class="btn secondary">Sair</button>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>CNPJ</th>
+                  <th>Razão Social</th>
+                  <th>E-mail</th>
+                  <th>Telefone</th>
+                  <th>Créditos</th>
+                  <th>Criado em</th>
+                  <th>Último login</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody">
+                <tr><td class="muted" colspan="9">Carregando…</td></tr>
+              </tbody>
+            </table>
           </div>
-        </header>
+        </section>
+      </main>
+    </section>
+  </div>
 
-        <main class="content">
-          <!-- HOME -->
-          <section id="routeHome" class="card">
-            <div class="row" style="align-items:center;justify-content:space-between">
-              <div>
-                <div class="title">Usuários</div>
-                <div class="subtitle">Busca instantânea por <b>nome</b>, <b>CNPJ</b> e <b>razão social</b>.</div>
-              </div>
-              <button id="newUserBtn" class="btn" title="Novo usuário">+</button>
-            </div>
-
-            <div class="hr"></div>
-
-            <div class="row">
-              <div class="field" style="flex:1;min-width:260px">
-                <label>Pesquisar</label>
-                <input id="searchInput" placeholder="Digite para filtrar..." />
-              </div>
-              <div class="field" style="min-width:200px">
-                <label>Filtro (exemplo)</label>
-                <input id="filterMinCredits" placeholder="Créditos ≥ (opcional)" inputmode="numeric" />
-              </div>
-              <button id="refreshBtn" class="btn secondary">Atualizar</button>
-              <div style="flex:1"></div>
-              <div id="statusText" class="muted small"></div>
-            </div>
-
-            <div id="errorText" class="error"></div>
-            <div id="okText" class="ok"></div>
-
-            <div class="tablewrap" style="margin-top:12px">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>CNPJ</th>
-                    <th>Razão Social</th>
-                    <th>E-mail</th>
-                    <th>Telefone</th>
-                    <th>Créditos</th>
-                    <th>Criado em</th>
-                    <th>Último login</th>
-                    <th>ID</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTbody">
-                  <tr><td colspan="10" class="muted">Carregando…</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- PLACEHOLDERS -->
-          <section id="routeReports" class="card" style="display:none">
-            <div class="title">Relatórios</div>
-            <div class="subtitle">Em construção.</div>
-          </section>
-
-          <section id="routeFinance" class="card" style="display:none">
-            <div class="title">Financeiro</div>
-            <div class="subtitle">Em construção.</div>
-          </section>
-
-          <section id="routeSettings" class="card" style="display:none">
-            <div class="title">Configurações</div>
-            <div class="subtitle">Em construção.</div>
-          </section>
-        </main>
-      </div>
+  <!-- overlay -->
+  <div id="overlay" class="overlay" aria-live="polite" aria-busy="true">
+    <div style="display:flex; flex-direction:column; align-items:center">
+      <div class="spinner"></div>
+      <div id="overlayText" class="txt">Sincronizando…</div>
     </div>
+  </div>
 
-    <!-- DRAWER -->
-    <div id="drawerBackdrop" class="drawer-backdrop"></div>
-    <aside id="drawer" class="drawer" aria-hidden="true">
-      <div class="drawer-header">
-        <div>
-          <div id="drawerTitle" class="title">Usuário</div>
-          <div id="drawerSubtitle" class="subtitle">—</div>
-        </div>
-        <button id="drawerCloseBtn" class="btn secondary">Fechar</button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="field">
-          <label>Nome</label>
-          <input id="fName" />
-        </div>
-
-        <div class="field">
-          <label>CNPJ</label>
-          <input id="fCnpj" />
-        </div>
-
-        <div class="field">
-          <label>Razão social</label>
-          <input id="fRazao" />
-        </div>
-
-        <div class="field">
-          <label>E-mail</label>
-          <input id="fEmail" />
-        </div>
-
-        <div class="field">
-          <label>Telefone (opcional)</label>
-          <input id="fPhone" placeholder="(11) 99999-9999" />
-        </div>
-
-        <div class="row">
-          <div class="field" style="flex:1;min-width:160px">
-            <label>Créditos</label>
-            <input id="fCredits" inputmode="numeric" />
-          </div>
-          <div class="field" style="flex:1;min-width:160px">
-            <label>Senha (criar)</label>
-            <input id="fPass" type="password" placeholder="mínimo 6" />
-          </div>
-        </div>
-
-        <div class="subtitle muted small" style="margin-top:4px">
-          • Para teste, a edição de <b>nome/CNPJ/razão/e-mail</b> depende de suporte no backend.
-          Créditos funcionam via <span class="kbd">adjust_credits</span>.
-        </div>
-
-        <div id="drawerError" class="error"></div>
-        <div id="drawerOk" class="ok"></div>
-
-        <div class="row" style="margin-top:6px">
-          <button id="drawerSaveBtn" class="btn">Salvar</button>
-          <button id="drawerResetPassBtn" class="btn secondary" disabled title="Vamos ativar depois">
-            Resetar senha (inativo)
-          </button>
-          <div style="flex:1"></div>
-          <button id="drawerDeleteBtn" class="btn danger" style="display:none">Excluir</button>
-        </div>
-      </div>
-    </aside>
-
-    <script src="/admin/assets/app.js"></script>
-  </body>
+  <!-- deps -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./assets/config.js"></script>
+  <script src="./assets/app.js"></script>
+</body>
 </html>

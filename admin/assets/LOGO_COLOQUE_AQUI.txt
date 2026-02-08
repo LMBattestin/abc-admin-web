@@ -1,0 +1,1 @@
+Coloque aqui o arquivo da logo (ex: abcsoft_logo.png) e ajuste o caminho em admin/index.html se necessário.
