@@ -1,96 +1,207 @@
 // admin/assets/dashboard.js
-(async function () {
-  const ABC = window.__ABC;
-  const { showLoading, hideLoading, showInlineError, bumpLoopGuard, getSession, clearAuth, supabase } = ABC;
-
+(function () {
+  const overlay = document.getElementById("overlay");
   const userNameEl = document.getElementById("userName");
   const logoutBtn = document.getElementById("logoutBtn");
-  const content = document.getElementById("contentPlaceholder");
 
-  // anti-loop
-  const loops = bumpLoopGuard();
-  if (loops >= 6) {
-    await clearAuth();
-    hideLoading();
-    showInlineError("Detectei um loop entre login/dashboard. Sessão limpa. Voltando para o login…");
-    setTimeout(() => window.location.replace("/admin/"), 700);
-    return;
+  const usersSection = document.getElementById("usersSection");
+  const placeholderSection = document.getElementById("placeholderSection");
+  const usersTbody = document.getElementById("usersTbody");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const searchInput = document.getElementById("searchInput");
+
+  function showOverlay(on) {
+    overlay.classList.toggle("hidden", !on);
   }
 
-  // IMPORTANTÍSSIMO: não deixa loader infinito aqui.
-  hideLoading();
-
-  // Auth gate (sem loader por padrão)
-  let session = null;
-  try {
-    session = await getSession();
-  } catch (e) {
-    console.error(e);
-    showInlineError("Falha ao verificar sessão no dashboard. Pode ser cache/arquivos antigos em produção.");
-    return;
+  function maskCNPJ(v) {
+    const s = String(v || "").replace(/\D/g, "");
+    if (s.length !== 14) return v || "";
+    return `${s.slice(0,2)}.${s.slice(2,5)}.${s.slice(5,8)}/${s.slice(8,12)}-${s.slice(12,14)}`;
   }
 
-  if (!session) {
-    window.location.replace("/admin/");
-    return;
+  function maskPhone(v) {
+    const s = String(v || "").replace(/\D/g, "");
+    if (!s) return "";
+    if (s.length === 11) return `(${s.slice(0,2)}) ${s.slice(2,7)}-${s.slice(7)}`;
+    if (s.length === 10) return `(${s.slice(0,2)}) ${s.slice(2,6)}-${s.slice(6)}`;
+    return v || "";
   }
 
-  userNameEl.textContent = session.user?.email || "Administrador";
+  function safe(v) { return (v ?? "").toString(); }
 
-  // UI (software/tabs)
-  document.querySelectorAll(".software-btn").forEach((btn) => {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll(".software-btn").forEach((b) => b.classList.remove("active"));
-      this.classList.add("active");
-      updateContent();
-    });
-  });
+  // Config + Supabase
+  const cfg = window.ABC_ADMIN_CONFIG || {};
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+    document.body.innerHTML = `<div style="padding:16px;color:#b00020;font-family:Arial">Config do Supabase ausente. Confira admin/assets/config.js</div>`;
+    return;
+  }
+  const supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      this.classList.add("active");
-      updateContent();
-    });
-  });
+  async function requireAuth() {
+    const { data } = await supabase.auth.getSession();
+    if (!data || !data.session) {
+      window.location.href = "./index.html";
+      return null;
+    }
+    return data.session;
+  }
 
-  logoutBtn?.addEventListener("click", async () => {
-    showLoading("Saindo…");
+  function showUsersUI() {
+    placeholderSection.classList.add("hidden");
+    usersSection.classList.remove("hidden");
+  }
+
+  // Fetch: profiles + credits_balance (merge por user_id)
+  async function loadUsers() {
+    showOverlay(true);
     try {
-      await supabase.auth.signOut();
+      // 1) pega profiles
+      const { data: profiles, error: pErr } = await supabase
+        .from("profiles")
+        .select("user_id,name,email,phone,cnpj,razao_social,created_at,updated_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (pErr) throw pErr;
+
+      const ids = (profiles || []).map(p => p.user_id).filter(Boolean);
+
+      // 2) pega balances
+      let balancesMap = new Map();
+      if (ids.length) {
+        const { data: balances, error: bErr } = await supabase
+          .from("credits_balance")
+          .select("user_id,balance,updated_at")
+          .in("user_id", ids);
+
+        if (bErr) throw bErr;
+
+        (balances || []).forEach(b => balancesMap.set(b.user_id, b.balance ?? 0));
+      }
+
+      renderUsers(profiles || [], balancesMap);
     } catch (e) {
       console.error(e);
+      usersTbody.innerHTML = `<tr><td colspan="8" class="muted">Erro ao carregar. Provável RLS bloqueando (ou nome de tabela errado). Veja Console (F12).</td></tr>`;
     } finally {
-      window.location.replace("/admin/");
+      showOverlay(false);
     }
-  });
+  }
 
-    function updateContent() {
-    const software = document.querySelector(".software-btn.active")?.getAttribute("data-software") || "";
-    const dept = document.querySelector(".tab-btn.active")?.getAttribute("data-department") || "";
+  function renderUsers(rows, balancesMap) {
+    const q = (searchInput.value || "").trim().toLowerCase();
 
-    const usersView = document.getElementById("users-view");
-    const placeholder = document.getElementById("placeholder-view");
+    const filtered = rows.filter(r => {
+      const name = safe(r.name).toLowerCase();
+      const cnpj = safe(r.cnpj).toLowerCase();
+      const razao = safe(r.razao_social).toLowerCase();
+      if (!q) return true;
+      return name.includes(q) || cnpj.includes(q) || razao.includes(q);
+    });
 
-    // ORE + USUÁRIOS => tabela real
-    if (software === "ore" && dept === "usuarios") {
-        if (typeof window.ABC_LOAD_USERS_VIEW === "function") {
-        window.ABC_LOAD_USERS_VIEW();
-        return;
+    if (!filtered.length) {
+      usersTbody.innerHTML = `<tr><td colspan="8" class="muted">Nenhum usuário encontrado.</td></tr>`;
+      return;
+    }
+
+    usersTbody.innerHTML = filtered.map(r => {
+      const credits = balancesMap.get(r.user_id) ?? 0;
+      return `
+        <tr>
+          <td>${safe(r.name)}</td>
+          <td>${maskCNPJ(r.cnpj)}</td>
+          <td>${safe(r.razao_social)}</td>
+          <td>${safe(r.email)}</td>
+          <td>${maskPhone(r.phone)}</td>
+          <td><strong>${credits}</strong></td>
+          <td>${safe(r.user_id)}</td>
+          <td>
+            <button class="action-btn action-edit" data-id="${safe(r.user_id)}" title="Editar"><i class="fas fa-pen"></i></button>
+            <button class="action-btn action-del" data-id="${safe(r.user_id)}" title="Excluir"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // eventos (placeholder)
+    usersTbody.querySelectorAll(".action-edit").forEach(btn => {
+      btn.addEventListener("click", () => {
+        alert("Editar (vamos abrir a meia-janela lateral depois). ID: " + btn.dataset.id);
+      });
+    });
+    usersTbody.querySelectorAll(".action-del").forEach(btn => {
+      btn.addEventListener("click", () => {
+        alert("Excluir (vamos implementar depois). ID: " + btn.dataset.id);
+      });
+    });
+  }
+
+  // Tabs / softwares (mantém a troca e carrega users quando for “usuarios”)
+  function setupNav() {
+    document.querySelectorAll(".software-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".software-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        // por enquanto, users é só demo; mais tarde filtramos por software
+      });
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const dept = btn.getAttribute("data-department");
+        if (dept === "usuarios") {
+          showUsersUI();
+          loadUsers();
+        } else {
+          usersSection.classList.add("hidden");
+          placeholderSection.classList.remove("hidden");
+          placeholderSection.querySelector(".placeholder-title").textContent = "Em breve";
+          placeholderSection.querySelector(".placeholder-text").textContent = "Essa seção será implementada depois.";
         }
-    }
+      });
+    });
 
-    // fallback placeholder
-    usersView.classList.add("hidden");
-    placeholder.classList.remove("hidden");
+    refreshBtn.addEventListener("click", () => loadUsers());
+    searchInput.addEventListener("input", () => {
+      // re-render sem novo fetch (usa o último HTML já? aqui refazendo com rows exigiria estado;
+      // solução simples: recarrega do supabase (ok por enquanto)
+      loadUsers();
+    });
+  }
 
-    const softwareLabel = software ? software.toUpperCase() : "—";
-    const deptLabel = dept ? dept.toUpperCase() : "—";
+  async function boot() {
+    showOverlay(true);
 
-    placeholder.innerHTML = `
-        <div class="placeholder-icon"><i class="fas fa-folder-open"></i></div>
-        <h2 class="placeholder-title">${softwareLabel} - ${deptLabel}</h2>
-        <p class="placeholder-text">Conteúdo para <strong>${softwareLabel}</strong> em <strong>${deptLabel}</strong> será carregado aqui.</p>
-    `;
-    }
+    const session = await requireAuth();
+    if (!session) return;
+
+    // Nome no topo (mostra email do auth)
+    userNameEl.textContent = session.user?.email || "admin";
+
+    logoutBtn.addEventListener("click", async () => {
+      showOverlay(true);
+      try {
+        await supabase.auth.signOut();
+      } finally {
+        window.location.href = "./index.html";
+      }
+    });
+
+    setupNav();
+
+    // inicia já em usuários
+    showUsersUI();
+    await loadUsers();
+
+    showOverlay(false);
+  }
+
+  boot().catch(err => {
+    console.error(err);
+    showOverlay(false);
+  });
 })();

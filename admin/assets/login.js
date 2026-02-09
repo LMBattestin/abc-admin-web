@@ -1,72 +1,58 @@
 // admin/assets/login.js
-(async function () {
-  const ABC = window.__ABC;
-  const { supabase, showLoading, hideLoading, showInlineError, bumpLoopGuard, getSession, clearAuth } = ABC;
-
+(function () {
+  const hint = document.getElementById("hint");
   const form = document.getElementById("loginForm");
-  const email = document.getElementById("email");
-  const password = document.getElementById("password");
-  const togglePassword = document.getElementById("togglePassword");
+  const loginBtn = document.getElementById("loginBtn");
+  const togglePass = document.getElementById("togglePass");
+  const passwordInput = document.getElementById("password");
 
-  // quebra loop se estiver voltando e vindo
-  const loops = bumpLoopGuard();
-  if (loops >= 6) {
-    await clearAuth();
-    hideLoading();
-    showInlineError("Detectei um loop de login. Sessão limpa. Recarregue a página e tente novamente.");
+  function setHint(msg) {
+    hint.textContent = msg || "";
+  }
+
+  // Config + Supabase client
+  const cfg = window.ABC_ADMIN_CONFIG || {};
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+    setHint("Config do Supabase ausente. Confira admin/assets/config.js");
     return;
   }
 
-  togglePassword?.addEventListener("click", () => {
-    if (!password) return;
-    password.type = password.type === "password" ? "text" : "password";
+  const supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  // Se já está logado, vai direto
+  supabase.auth.getSession().then(({ data }) => {
+    if (data && data.session) {
+      window.location.href = "./dashboard.html";
+    }
   });
 
-  // Checa sessão existente
-  showLoading("Carregando…");
-  try {
-    const session = await getSession();
-    if (session) {
-      // já autenticado -> dashboard
-      window.location.replace("/admin/dashboard.html");
-      return;
-    }
-  } catch (e) {
-    console.error(e);
-    showInlineError("Falha ao verificar sessão. Verifique se os arquivos /admin/assets/*.js estão atualizados.");
-  } finally {
-    hideLoading();
-  }
+  togglePass.addEventListener("click", () => {
+    passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+  });
 
-  form?.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    setHint("");
 
-    const em = (email?.value || "").trim();
-    const pw = password?.value || "";
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-    if (!em || !pw) {
-      showInlineError("Preencha email e senha.");
-      return;
-    }
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Entrando...";
 
-    showLoading("Entrando…");
     try {
-      const { data, error } = await Promise.race([
-        supabase.auth.signInWithPassword({ email: em, password: pw }),
-        ABC.timeoutPromise(8000, "Timeout no login (signInWithPassword).")
-      ]);
-
-      if (error || !data?.session) {
-        showInlineError("Credenciais inválidas ou usuário sem permissão.");
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.session) {
+        setHint(error?.message || "Falha no login.");
         return;
       }
-
-      window.location.replace("/admin/dashboard.html");
-    } catch (e2) {
-      console.error(e2);
-      showInlineError(e2?.message || "Falha no login.");
+      window.location.href = "./dashboard.html";
+    } catch (err) {
+      setHint("Erro inesperado no login.");
+      console.error(err);
     } finally {
-      hideLoading();
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Entrar";
     }
   });
 })();

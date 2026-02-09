@@ -1,3 +1,4 @@
+<!-- admin/index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,17 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/admin/assets/login.css" />
+  <link rel="stylesheet" href="./assets/login.css" />
 </head>
-
 <body>
-  <div id="loading" class="loading hidden" aria-hidden="true">
-    <div class="loading-card">
-      <div class="spinner"></div>
-      <div class="loading-text" id="loading-text">Carregando…</div>
-    </div>
-  </div>
-
   <div class="login-container">
     <!-- Ondas Superiores -->
     <svg class="wave-container wave-top" viewBox="0 0 1440 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,55 +26,35 @@
       <path d="M0,100 Q240,140 480,110 Q720,80 960,110 Q1200,140 1440,100 L1440,0 L0,0 Z" fill="#0C8B5B" opacity="0.88"></path>
     </svg>
 
-    <!-- Card de Login -->
+    <!-- Card -->
     <div class="login-card">
-      <div class="logo-container">
-        <!-- usa tua imagem (não vou mexer) -->
-        <img class="logo-img" src="/admin/assets/abcsoft_logo.png" alt="ABCSoft Lab" />
-      </div>
+      <!-- usa o asset real (você troca depois se quiser) -->
+      <img class="logo-img" src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" />
 
       <h1 class="login-title">ABCSoft Lab</h1>
 
-      <form class="login-form" id="loginForm" autocomplete="on">
+      <form class="login-form" id="loginForm">
         <div class="form-group">
-          <input
-            type="email"
-            id="email"
-            name="email"
-            class="form-input"
-            placeholder="Email"
-            autocomplete="username"
-            required
-          />
+          <input type="email" id="email" class="form-input" placeholder="Email" required />
         </div>
 
         <div class="form-group password-group">
-          <input
-            type="password"
-            id="password"
-            name="password"
-            class="form-input"
-            placeholder="Senha"
-            autocomplete="current-password"
-            required
-          />
-          <button id="togglePassword" class="toggle-password" type="button" aria-label="Mostrar senha" title="Mostrar senha">
-            👁
-          </button>
+          <input type="password" id="password" class="form-input" placeholder="Senha" required />
+          <button type="button" class="toggle-pass" id="togglePass" aria-label="Mostrar senha" title="Mostrar senha">👁</button>
         </div>
 
-        <div id="err" class="alert hidden"></div>
-
-        <button type="submit" class="login-button">Entrar</button>
+        <button type="submit" class="login-button" id="loginBtn">Entrar</button>
       </form>
 
-      <a href="javascript:void(0)" class="forgot-password-link">Esqueci minha senha</a>
+      <a href="#" class="forgot-password-link" id="forgotLink">Esqueci minha senha</a>
+
+      <div class="login-hint" id="hint"></div>
     </div>
   </div>
 
-  <script src="/admin/assets/config.js"></script>
+  <!-- config precisa vir ANTES do supabase/app -->
+  <script src="./assets/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/admin/assets/auth.js"></script>
-  <script src="/admin/assets/login.js"></script>
+  <script src="./assets/login.js"></script>
 </body>
 </html>
