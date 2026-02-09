@@ -65,14 +65,32 @@
     }
   });
 
-  function updateContent() {
-    const software = document.querySelector(".software-btn.active")?.getAttribute("data-software")?.toUpperCase() || "—";
-    const dept = document.querySelector(".tab-btn.active")?.getAttribute("data-department")?.toUpperCase() || "—";
+    function updateContent() {
+    const software = document.querySelector(".software-btn.active")?.getAttribute("data-software") || "";
+    const dept = document.querySelector(".tab-btn.active")?.getAttribute("data-department") || "";
 
-    content.innerHTML = `
-      <div class="placeholder-icon"><i class="fas fa-folder-open"></i></div>
-      <h2 class="placeholder-title">${software} - ${dept}</h2>
-      <p class="placeholder-text">Conteúdo para <strong>${software}</strong> em <strong>${dept}</strong> será carregado aqui.</p>
+    const usersView = document.getElementById("users-view");
+    const placeholder = document.getElementById("placeholder-view");
+
+    // ORE + USUÁRIOS => tabela real
+    if (software === "ore" && dept === "usuarios") {
+        if (typeof window.ABC_LOAD_USERS_VIEW === "function") {
+        window.ABC_LOAD_USERS_VIEW();
+        return;
+        }
+    }
+
+    // fallback placeholder
+    usersView.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+
+    const softwareLabel = software ? software.toUpperCase() : "—";
+    const deptLabel = dept ? dept.toUpperCase() : "—";
+
+    placeholder.innerHTML = `
+        <div class="placeholder-icon"><i class="fas fa-folder-open"></i></div>
+        <h2 class="placeholder-title">${softwareLabel} - ${deptLabel}</h2>
+        <p class="placeholder-text">Conteúdo para <strong>${softwareLabel}</strong> em <strong>${deptLabel}</strong> será carregado aqui.</p>
     `;
-  }
+    }
 })();

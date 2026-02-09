@@ -399,3 +399,190 @@ html, body {
   margin-bottom: 14px;
 }
 .alert.hidden{ display:none; }
+/* --- FIX #1: remover scrollbar feia das abas --- */
+.department-tabs {
+  overflow: visible;            /* não precisa rolar */
+}
+
+/* Se em algum breakpoint você quiser manter overflow-x, esconda a scrollbar */
+.department-tabs::-webkit-scrollbar { height: 0; }
+.department-tabs { scrollbar-width: none; } /* Firefox */
+
+/* --- FIX #1b: barrinha horizontal abaixo da aba ativa (orelinha) --- */
+.tab-btn {
+  position: relative;
+  border-radius: 10px 10px 0 0;
+}
+
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -8px;                 /* barrinha embaixo da "orelha" */
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+}
+/* --- FIX #2: logo imagem ao lado do nome --- */
+.header-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.brand-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+/* --- FIX #3: empurrar ícones pro rodapé --- */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-top {
+  padding-top: 6px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 18px;
+}
+/* --- UI: alert / tabela --- */
+.alert{
+  width: 100%;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.hidden{ display:none !important; }
+
+.users-view { width: 100%; }
+.users-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.users-title{
+  font-family: var(--font-primary);
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+.users-subtitle{
+  margin: 6px 0 0;
+  color: var(--color-medium-gray);
+  font-size: 13px;
+}
+
+.users-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.users-search{
+  width: 320px;
+  max-width: 42vw;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe4e6;
+  outline: none;
+  font-size: 13px;
+  background: #fff;
+}
+.users-search:focus{
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 4px rgba(12, 139, 91, 0.10);
+}
+
+.btn-primary{
+  background: var(--color-secondary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-primary:hover{ filter: brightness(0.95); }
+
+.table-card{
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e9eff1;
+  overflow: hidden;
+}
+
+.users-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.users-table thead th{
+  text-align: left;
+  padding: 12px 14px;
+  background: #f7fafb;
+  border-bottom: 1px solid #e9eff1;
+  color: #0a3866;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.users-table tbody td{
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef4f6;
+  color: #0a3866;
+}
+.users-table tbody tr:hover td{
+  background: #fbfdfe;
+}
+.td-muted{
+  color: var(--color-medium-gray) !important;
+  text-align: center;
+  padding: 18px 14px !important;
+}
+
+.action-btn{
+  border: 1px solid #dbe4e6;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+.action-btn:hover{ background:#f7fafb; }
+.action-danger{ border-color:#fecaca; color:#991b1b; }
+.action-danger:hover{ background:#fee2e2; }
+.actions-cell{
+  display:flex;
+  gap: 8px;
+  justify-content:flex-end;
+}
+
+/* Responsivo básico */
+@media (max-width: 980px){
+  .users-header{ flex-direction: column; align-items: flex-start; }
+  .users-actions{ width: 100%; }
+  .users-search{ width: 100%; max-width: 100%; }
+}

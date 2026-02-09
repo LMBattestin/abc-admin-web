@@ -24,28 +24,40 @@
   <div class="dashboard-wrapper">
     <!-- SIDEBAR -->
     <aside class="sidebar">
-      <nav class="software-list">
+    <div class="sidebar-top">
+        <nav class="software-list">
         <button class="software-btn active" data-software="ore" title="ORE">
-          <i class="fas fa-cube"></i>
-          <span class="software-label">ORE</span>
+            <i class="fas fa-cube"></i>
+            <span class="software-label">ORE</span>
         </button>
 
         <button class="software-btn" data-software="conscio" title="CONSCIO">
-          <i class="fas fa-brain"></i>
-          <span class="software-label">CONSCIO</span>
+            <i class="fas fa-brain"></i>
+            <span class="software-label">CONSCIO</span>
         </button>
 
         <button class="software-btn" data-software="automa" title="AUTOMA">
-          <i class="fas fa-robot"></i>
-          <span class="software-label">AUTOMA</span>
+            <i class="fas fa-robot"></i>
+            <span class="software-label">AUTOMA</span>
         </button>
+        </nav>
+    </div>
 
+    <div class="sidebar-bottom">
         <div class="sidebar-divider"></div>
 
-        <button class="system-btn" title="Notificações"><i class="fas fa-bell"></i></button>
-        <button class="system-btn" title="Estatísticas"><i class="fas fa-chart-bar"></i></button>
-        <button class="system-btn" title="Configurações"><i class="fas fa-cog"></i></button>
-      </nav>
+        <button class="system-btn" title="Notificações">
+        <i class="fas fa-bell"></i>
+        </button>
+
+        <button class="system-btn" title="Estatísticas">
+        <i class="fas fa-chart-bar"></i>
+        </button>
+
+        <button class="system-btn" title="Configurações">
+        <i class="fas fa-cog"></i>
+        </button>
+    </div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -53,10 +65,11 @@
       <!-- HEADER -->
       <header class="dashboard-header">
         <div class="header-logo-section">
-          <div class="brand-text">
+        <img class="brand-logo" src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" />
+        <div class="brand-text">
             <span class="brand-name">ABCSoft</span>
             <span class="brand-lab">Lab</span>
-          </div>
+        </div>
         </div>
 
         <nav class="department-tabs">
@@ -77,19 +90,62 @@
 
       <!-- CONTEÚDO -->
       <div class="content-area">
-        <div class="content-placeholder" id="contentPlaceholder">
-          <div class="placeholder-icon"><i class="fas fa-folder-open"></i></div>
-          <h2 class="placeholder-title">Bem-vindo ao ABCSoft Lab</h2>
-          <p class="placeholder-text">Selecione um software na barra lateral e um departamento acima para começar.</p>
+        <div class="content-area">
+        <div id="page-error" class="alert hidden"></div>
+
+        <div id="users-view" class="users-view hidden">
+            <div class="users-header">
+            <div>
+                <h2 class="users-title">Usuários</h2>
+                <p class="users-subtitle">Busca instantânea por nome, CNPJ e razão social.</p>
+            </div>
+
+            <div class="users-actions">
+                <input id="users-search" class="users-search" placeholder="Digite para filtrar..." />
+                <button id="users-new" class="btn-primary">+ Novo</button>
+            </div>
+            </div>
+
+            <div class="table-card">
+            <table class="users-table">
+                <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Empresa</th>
+                    <th>CNPJ</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Créditos</th>
+                    <th>Criado em</th>
+                    <th>Último login</th>
+                    <th style="text-align:right">Ações</th>
+                </tr>
+                </thead>
+                <tbody id="users-tbody">
+                <tr><td colspan="9" class="td-muted">Carregando...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div id="placeholder-view" class="content-placeholder">
+            <div class="placeholder-icon">
+            <i class="fas fa-folder-open"></i>
+            </div>
+            <h2 class="placeholder-title">Bem-vindo ao ABCSoft Lab</h2>
+            <p class="placeholder-text">Selecione um software na barra lateral e um departamento acima para começar.</p>
+        </div>
         </div>
         <div id="page-error" class="alert hidden"></div>
       </div>
     </main>
   </div>
 
-  <script src="/admin/assets/config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/admin/assets/auth.js"></script>
-  <script src="/admin/assets/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./assets/config.js"></script>
+    <script src="./assets/auth.js"></script>
+
+    <script src="./assets/users.js"></script>
+    <script src="./assets/dashboard.js"></script>
 </body>
 </html>
