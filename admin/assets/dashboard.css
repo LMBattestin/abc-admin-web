@@ -388,3 +388,14 @@ html, body {
   .placeholder-title { font-size: 18px; }
   .placeholder-text { font-size: 12px; }
 }
+.alert{
+  width: 100%;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.alert.hidden{ display:none; }

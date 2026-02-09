@@ -1,58 +1,70 @@
 // admin/assets/login.js
 (async function () {
-  const { supabase, showLoading, hideLoading, getSession } = window.__ABC;
+  const ABC = window.__ABC;
+  const { supabase, showLoading, hideLoading, showInlineError, bumpLoopGuard, getSession, clearAuth } = ABC;
 
   const form = document.getElementById("loginForm");
   const email = document.getElementById("email");
   const password = document.getElementById("password");
   const togglePassword = document.getElementById("togglePassword");
-  const err = document.getElementById("err");
 
-  function setErr(msg) {
-    if (!msg) {
-      err.classList.add("hidden");
-      err.textContent = "";
-      return;
-    }
-    err.textContent = msg;
-    err.classList.remove("hidden");
+  // quebra loop se estiver voltando e vindo
+  const loops = bumpLoopGuard();
+  if (loops >= 6) {
+    await clearAuth();
+    hideLoading();
+    showInlineError("Detectei um loop de login. Sessão limpa. Recarregue a página e tente novamente.");
+    return;
   }
 
-  // Se já estiver logado, vai direto pro dashboard
+  togglePassword?.addEventListener("click", () => {
+    if (!password) return;
+    password.type = password.type === "password" ? "text" : "password";
+  });
+
+  // Checa sessão existente
   showLoading("Carregando…");
   try {
     const session = await getSession();
     if (session) {
+      // já autenticado -> dashboard
       window.location.replace("/admin/dashboard.html");
       return;
     }
+  } catch (e) {
+    console.error(e);
+    showInlineError("Falha ao verificar sessão. Verifique se os arquivos /admin/assets/*.js estão atualizados.");
   } finally {
     hideLoading();
   }
 
-  togglePassword.addEventListener("click", () => {
-    password.type = password.type === "password" ? "text" : "password";
-  });
-
-  form.addEventListener("submit", async (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    setErr("");
 
-    const em = (email.value || "").trim();
-    const pw = password.value || "";
+    const em = (email?.value || "").trim();
+    const pw = password?.value || "";
+
     if (!em || !pw) {
-      setErr("Preencha email e senha.");
+      showInlineError("Preencha email e senha.");
       return;
     }
 
     showLoading("Entrando…");
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: em, password: pw });
+      const { data, error } = await Promise.race([
+        supabase.auth.signInWithPassword({ email: em, password: pw }),
+        ABC.timeoutPromise(8000, "Timeout no login (signInWithPassword).")
+      ]);
+
       if (error || !data?.session) {
-        setErr("Credenciais inválidas.");
+        showInlineError("Credenciais inválidas ou usuário sem permissão.");
         return;
       }
+
       window.location.replace("/admin/dashboard.html");
+    } catch (e2) {
+      console.error(e2);
+      showInlineError(e2?.message || "Falha no login.");
     } finally {
       hideLoading();
     }
