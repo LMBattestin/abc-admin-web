@@ -1,0 +1,267 @@
+/* admin/assets/login.css */
+/* ============================================
+   VARIÁVEIS E RESET
+   ============================================ */
+:root {
+  --color-primary: #0A3866;
+  --color-secondary: #0C8B5B;
+  --color-light-gray: #ABC4C6;
+  --color-medium-gray: #5A8490;
+  --color-white: #FFFFFF;
+  --color-bg: #FFFFFF;
+
+  --font-primary: 'Inter', sans-serif;
+  --font-secondary: 'Roboto', sans-serif;
+
+  --shadow-card: 0 24px 72px rgba(10, 56, 102, 0.22);
+  --shadow-wave: 0 2px 8px rgba(10, 56, 102, 0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-secondary);
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+/* ============================================
+   LOADING OVERLAY (PADRÃO)
+   ============================================ */
+.loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 56, 102, 0.18);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.loading.hidden { display: none; }
+.loading-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 72px rgba(10, 56, 102, 0.22);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(10, 56, 102, .18);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--color-primary); font-weight: 600; }
+
+/* ============================================
+   CONTAINER PRINCIPAL
+   ============================================ */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg);
+  position: relative;
+}
+
+/* ============================================
+   ONDAS SVG
+   ============================================ */
+.wave-container {
+  position: absolute;
+  width: 100%;
+  pointer-events: none;
+}
+.wave-top { top: 0; left: 0; height: 160px; }
+.wave-bottom { bottom: 0; left: 0; height: 160px; }
+
+/* ============================================
+   CARD DE LOGIN
+   ============================================ */
+.login-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 460px;
+  padding: 62px 54px;
+  background-color: var(--color-white);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ============================================
+   LOGO (PNG)
+   ============================================ */
+.logo-container {
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: center;
+}
+.logo-img {
+  width: 210px;
+  max-width: 78%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(var(--shadow-wave));
+}
+
+/* ============================================
+   TÍTULO
+   ============================================ */
+.login-title {
+  font-family: var(--font-primary);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 34px;
+  letter-spacing: -0.5px;
+}
+
+/* ============================================
+   FORMULÁRIO
+   ============================================ */
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.form-group { width: 100%; }
+
+.form-input {
+  width: 100%;
+  padding: 13px 18px;
+  font-family: var(--font-secondary);
+  font-size: 16px;
+  color: var(--color-primary);
+  background-color: var(--color-white);
+  border: 2px solid var(--color-light-gray);
+  border-radius: 12px;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+.form-input::placeholder {
+  color: var(--color-medium-gray);
+  font-weight: 400;
+}
+.form-input:focus {
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 4px rgba(12, 139, 91, 0.12);
+}
+.form-input:hover:not(:focus) {
+  border-color: var(--color-medium-gray);
+}
+
+/* Senha + botão olho */
+.password-group { position: relative; }
+.toggle-password{
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(10,56,102,.06);
+  color: var(--color-primary);
+  transition: all .18s ease;
+}
+.toggle-password:hover { background: rgba(12,139,91,.12); }
+
+/* ============================================
+   ALERTA DE ERRO
+   ============================================ */
+.alert{
+  width: 100%;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.alert.hidden{ display: none; }
+
+/* ============================================
+   BOTÃO LOGIN
+   ============================================ */
+.login-button {
+  width: 100%;
+  padding: 13px 24px;
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-white);
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 4px;
+}
+.login-button:hover {
+  background-color: var(--color-secondary);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(12, 139, 91, 0.32);
+}
+.login-button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(12, 139, 91, 0.24);
+}
+
+/* ============================================
+   LINK RECUPERAR SENHA
+   ============================================ */
+.forgot-password-link {
+  font-family: var(--font-secondary);
+  font-size: 14px;
+  color: var(--color-medium-gray);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  font-weight: 500;
+}
+.forgot-password-link:hover {
+  color: var(--color-secondary);
+  text-decoration: underline;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+@media (max-width: 768px) {
+  .login-card { max-width: 88%; padding: 50px 42px; border-radius: 18px; }
+  .login-title { font-size: 28px; margin-bottom: 28px; }
+  .form-input { font-size: 15px; padding: 12px 16px; }
+  .login-button { font-size: 15px; padding: 12px 20px; }
+  .forgot-password-link { font-size: 13px; }
+  .wave-top, .wave-bottom { height: 130px; }
+}
+
+@media (max-width: 480px) {
+  .login-card { max-width: 92%; padding: 38px 30px; border-radius: 16px; }
+  .login-title { font-size: 24px; margin-bottom: 24px; }
+  .login-form { gap: 12px; margin-bottom: 18px; }
+  .form-input { font-size: 14px; padding: 12px 14px; border-radius: 10px; }
+  .login-button { font-size: 14px; padding: 12px 18px; border-radius: 10px; }
+  .forgot-password-link { font-size: 12px; }
+  .wave-top, .wave-bottom { height: 110px; }
+}

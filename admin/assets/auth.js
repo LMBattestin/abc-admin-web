@@ -22,29 +22,33 @@
 
   const client = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 
+  function showLoading(text) {
+    const el = document.getElementById("loading");
+    const t = document.getElementById("loading-text");
+    if (t && text) t.textContent = text;
+    if (el) el.classList.remove("hidden");
+  }
+  function hideLoading() {
+    const el = document.getElementById("loading");
+    if (el) el.classList.add("hidden");
+  }
+
   window.__ABC = {
     supabase: client,
     cfg: CFG,
-    showLoading(text) {
-      const el = document.getElementById("loading");
-      const t = document.getElementById("loading-text");
-      if (t && text) t.textContent = text;
-      if (el) el.classList.remove("hidden");
-      document.body.classList.add("blurred");
-    },
-    hideLoading() {
-      const el = document.getElementById("loading");
-      if (el) el.classList.add("hidden");
-      document.body.classList.remove("blurred");
+    showLoading,
+    hideLoading,
+    async getSession() {
+      const { data } = await client.auth.getSession();
+      return data?.session || null;
     },
     async requireSessionOrRedirect(toLoginUrl) {
-      const { data } = await client.auth.getSession();
-      const session = data?.session;
-      if (!session) {
+      const s = await this.getSession();
+      if (!s) {
         window.location.replace(toLoginUrl);
         return null;
       }
-      return session;
+      return s;
     }
   };
 })();

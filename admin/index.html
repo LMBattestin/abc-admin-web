@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>ABCSoft Lab – Admin | Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/admin/assets/app.css" />
-</head>
-<body class="page-login">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABCSoft Lab - Login</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/admin/assets/login.css" />
+</head>
+
+<body>
   <div id="loading" class="loading hidden" aria-hidden="true">
     <div class="loading-card">
       <div class="spinner"></div>
@@ -15,27 +20,64 @@
     </div>
   </div>
 
-  <div class="bg-waves" aria-hidden="true"></div>
+  <div class="login-container">
+    <!-- Ondas Superiores -->
+    <svg class="wave-container wave-top" viewBox="0 0 1440 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,75 Q240,35 480,65 Q720,95 960,65 Q1200,35 1440,75 L1440,0 L0,0 Z" fill="#0C8B5B" opacity="0.88"></path>
+      <path d="M0,105 Q240,65 480,100 Q720,135 960,100 Q1200,65 1440,105 L1440,160 L0,160 Z" fill="#0A3866" opacity="0.68"></path>
+    </svg>
 
-  <main class="login-wrap">
-    <section class="login-card">
-      <img src="/admin/assets/abcsoft_logo.png" class="login-logo" alt="ABCSoft Lab" />
+    <!-- Ondas Inferiores -->
+    <svg class="wave-container wave-bottom" viewBox="0 0 1440 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,70 Q240,110 480,75 Q720,40 960,75 Q1200,110 1440,70 L1440,160 L0,160 Z" fill="#0A3866" opacity="0.68"></path>
+      <path d="M0,100 Q240,140 480,110 Q720,80 960,110 Q1200,140 1440,100 L1440,0 L0,0 Z" fill="#0C8B5B" opacity="0.88"></path>
+    </svg>
 
-      <form id="login-form" class="login-form" autocomplete="on">
-        <input id="email" type="email" placeholder="Email" autocomplete="username" required />
-        <div class="pw-row">
-          <input id="password" type="password" placeholder="Senha" autocomplete="current-password" required />
-          <button id="toggle-pw" type="button" class="pw-toggle" aria-label="Mostrar senha">👁</button>
+    <!-- Card de Login -->
+    <div class="login-card">
+      <div class="logo-container">
+        <!-- usa tua imagem (não vou mexer) -->
+        <img class="logo-img" src="/admin/assets/abcsoft_logo.png" alt="ABCSoft Lab" />
+      </div>
+
+      <h1 class="login-title">ABCSoft Lab</h1>
+
+      <form class="login-form" id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            placeholder="Email"
+            autocomplete="username"
+            required
+          />
         </div>
 
-        <button class="btn-primary" type="submit">Entrar</button>
+        <div class="form-group password-group">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="Senha"
+            autocomplete="current-password"
+            required
+          />
+          <button id="togglePassword" class="toggle-password" type="button" aria-label="Mostrar senha" title="Mostrar senha">
+            👁
+          </button>
+        </div>
 
         <div id="err" class="alert hidden"></div>
 
-        <a class="forgot" href="javascript:void(0)">Esqueci minha senha</a>
+        <button type="submit" class="login-button">Entrar</button>
       </form>
-    </section>
-  </main>
+
+      <a href="javascript:void(0)" class="forgot-password-link">Esqueci minha senha</a>
+    </div>
+  </div>
 
   <script src="/admin/assets/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

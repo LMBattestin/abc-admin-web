@@ -1,13 +1,19 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>ABCSoft Lab – Admin | Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/admin/assets/app.css" />
-</head>
-<body class="page-dashboard">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABCSoft Lab - Dashboard</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/admin/assets/dashboard.css" />
+</head>
+
+<body>
   <div id="loading" class="loading hidden" aria-hidden="true">
     <div class="loading-card">
       <div class="spinner"></div>
@@ -15,101 +21,68 @@
     </div>
   </div>
 
-  <div class="dash-shell">
+  <div class="dashboard-wrapper">
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-      <div class="sidebar-top">
-        <div class="side-badge"></div>
-      </div>
+      <nav class="software-list">
+        <button class="software-btn active" data-software="ore" title="ORE">
+          <i class="fas fa-cube"></i>
+          <span class="software-label">ORE</span>
+        </button>
 
-      <button class="side-project active" data-project="ore" title="ORE">
-        <span class="side-ico">⬡</span>
-        <span class="side-txt">ORE</span>
-      </button>
+        <button class="software-btn" data-software="conscio" title="CONSCIO">
+          <i class="fas fa-brain"></i>
+          <span class="software-label">CONSCIO</span>
+        </button>
 
-      <button class="side-project" data-project="conscio" title="CONSCIO">
-        <span class="side-ico">🧠</span>
-        <span class="side-txt">CON</span>
-      </button>
+        <button class="software-btn" data-software="automa" title="AUTOMA">
+          <i class="fas fa-robot"></i>
+          <span class="software-label">AUTOMA</span>
+        </button>
 
-      <button class="side-project" data-project="automa" title="AUTOMA">
-        <span class="side-ico">🤖</span>
-        <span class="side-txt">AUT</span>
-      </button>
+        <div class="sidebar-divider"></div>
 
-      <div class="sidebar-spacer"></div>
-
-      <button class="side-icon" title="Notificações">🔔</button>
-      <button class="side-icon" title="Relatórios">▮▮▮</button>
-      <button class="side-icon" title="Configurações">⚙️</button>
+        <button class="system-btn" title="Notificações"><i class="fas fa-bell"></i></button>
+        <button class="system-btn" title="Estatísticas"><i class="fas fa-chart-bar"></i></button>
+        <button class="system-btn" title="Configurações"><i class="fas fa-cog"></i></button>
+      </nav>
     </aside>
 
-    <main class="main">
-      <header class="topbar">
-        <div class="brand">
-          <span class="brand-mark">▸</span>
-          <span class="brand-name">ABCSoft Lab</span>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- HEADER -->
+      <header class="dashboard-header">
+        <div class="header-logo-section">
+          <div class="brand-text">
+            <span class="brand-name">ABCSoft</span>
+            <span class="brand-lab">Lab</span>
+          </div>
         </div>
 
-        <nav class="tabs" aria-label="Seções">
-          <button class="tab active" data-area="users">USUÁRIOS</button>
-          <button class="tab" data-area="reports">RELATÓRIOS</button>
-          <button class="tab" data-area="finance">FINANÇAS</button>
-          <button class="tab" data-area="manage">GESTÃO</button>
+        <nav class="department-tabs">
+          <button class="tab-btn active" data-department="usuarios"><span>USUÁRIOS</span></button>
+          <button class="tab-btn" data-department="relatorios"><span>RELATÓRIOS</span></button>
+          <button class="tab-btn" data-department="financas"><span>FINANÇAS</span></button>
+          <button class="tab-btn" data-department="gestao"><span>GESTÃO</span></button>
         </nav>
 
-        <div class="userbox">
-          <div class="avatar"></div>
-          <div class="user-meta">
-            <div id="user-name" class="user-name">—</div>
-            <button id="logout" class="btn-link" type="button">Sair</button>
+        <div class="user-section">
+          <div class="user-info">
+            <span class="user-name" id="userName">—</span>
+            <span class="user-role">Administrador</span>
           </div>
+          <button class="logout-btn" id="logoutBtn" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
         </div>
       </header>
 
-      <section class="panel">
-        <div class="panel-inner">
-          <div class="panel-head">
-            <div>
-              <h1 id="panel-title">Usuários</h1>
-              <p class="panel-sub">Gerencie contas, créditos e acesso.</p>
-            </div>
-
-            <div class="panel-actions">
-              <div class="search-wrap">
-                <input id="q" class="search" placeholder="Pesquisar por nome, CNPJ ou razão social…" />
-              </div>
-              <button id="btn-new" class="btn-primary small" type="button">+ Novo</button>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table class="table" id="users-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>CNPJ</th>
-                  <th>Razão Social</th>
-                  <th>E-mail</th>
-                  <th>Telefone</th>
-                  <th>Créditos</th>
-                  <th>Criado em</th>
-                  <th>Último login</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="users-body">
-                <tr><td colspan="9" class="muted">Carregando…</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div id="empty" class="empty hidden">
-            Nenhum registro encontrado.
-          </div>
-
-          <div id="fatal" class="alert hidden"></div>
+      <!-- CONTEÚDO -->
+      <div class="content-area">
+        <div class="content-placeholder" id="contentPlaceholder">
+          <div class="placeholder-icon"><i class="fas fa-folder-open"></i></div>
+          <h2 class="placeholder-title">Bem-vindo ao ABCSoft Lab</h2>
+          <p class="placeholder-text">Selecione um software na barra lateral e um departamento acima para começar.</p>
         </div>
-      </section>
+      </div>
     </main>
   </div>
 

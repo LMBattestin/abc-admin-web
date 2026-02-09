@@ -1,11 +1,11 @@
 // admin/assets/login.js
 (async function () {
-  const { supabase, showLoading, hideLoading } = window.__ABC;
+  const { supabase, showLoading, hideLoading, getSession } = window.__ABC;
 
-  const form = document.getElementById("login-form");
+  const form = document.getElementById("loginForm");
   const email = document.getElementById("email");
   const password = document.getElementById("password");
-  const toggle = document.getElementById("toggle-pw");
+  const togglePassword = document.getElementById("togglePassword");
   const err = document.getElementById("err");
 
   function setErr(msg) {
@@ -18,11 +18,11 @@
     err.classList.remove("hidden");
   }
 
-  // Se já está logado, manda direto pro dashboard
+  // Se já estiver logado, vai direto pro dashboard
   showLoading("Carregando…");
   try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) {
+    const session = await getSession();
+    if (session) {
       window.location.replace("/admin/dashboard.html");
       return;
     }
@@ -30,7 +30,7 @@
     hideLoading();
   }
 
-  toggle.addEventListener("click", () => {
+  togglePassword.addEventListener("click", () => {
     password.type = password.type === "password" ? "text" : "password";
   });
 
