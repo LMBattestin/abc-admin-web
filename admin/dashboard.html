@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>ABCSoft Lab – Admin | Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/admin/assets/app.css" />
+</head>
+<body class="page-dashboard">
+
+  <div id="loading" class="loading hidden" aria-hidden="true">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">Sincronizando…</div>
+    </div>
+  </div>
+
+  <div class="dash-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="side-badge"></div>
+      </div>
+
+      <button class="side-project active" data-project="ore" title="ORE">
+        <span class="side-ico">⬡</span>
+        <span class="side-txt">ORE</span>
+      </button>
+
+      <button class="side-project" data-project="conscio" title="CONSCIO">
+        <span class="side-ico">🧠</span>
+        <span class="side-txt">CON</span>
+      </button>
+
+      <button class="side-project" data-project="automa" title="AUTOMA">
+        <span class="side-ico">🤖</span>
+        <span class="side-txt">AUT</span>
+      </button>
+
+      <div class="sidebar-spacer"></div>
+
+      <button class="side-icon" title="Notificações">🔔</button>
+      <button class="side-icon" title="Relatórios">▮▮▮</button>
+      <button class="side-icon" title="Configurações">⚙️</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">▸</span>
+          <span class="brand-name">ABCSoft Lab</span>
+        </div>
+
+        <nav class="tabs" aria-label="Seções">
+          <button class="tab active" data-area="users">USUÁRIOS</button>
+          <button class="tab" data-area="reports">RELATÓRIOS</button>
+          <button class="tab" data-area="finance">FINANÇAS</button>
+          <button class="tab" data-area="manage">GESTÃO</button>
+        </nav>
+
+        <div class="userbox">
+          <div class="avatar"></div>
+          <div class="user-meta">
+            <div id="user-name" class="user-name">—</div>
+            <button id="logout" class="btn-link" type="button">Sair</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-inner">
+          <div class="panel-head">
+            <div>
+              <h1 id="panel-title">Usuários</h1>
+              <p class="panel-sub">Gerencie contas, créditos e acesso.</p>
+            </div>
+
+            <div class="panel-actions">
+              <div class="search-wrap">
+                <input id="q" class="search" placeholder="Pesquisar por nome, CNPJ ou razão social…" />
+              </div>
+              <button id="btn-new" class="btn-primary small" type="button">+ Novo</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table" id="users-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>CNPJ</th>
+                  <th>Razão Social</th>
+                  <th>E-mail</th>
+                  <th>Telefone</th>
+                  <th>Créditos</th>
+                  <th>Criado em</th>
+                  <th>Último login</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="users-body">
+                <tr><td colspan="9" class="muted">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="empty" class="empty hidden">
+            Nenhum registro encontrado.
+          </div>
+
+          <div id="fatal" class="alert hidden"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/admin/assets/auth.js"></script>
+  <script src="/admin/assets/dashboard.js"></script>
+</body>
+</html>
