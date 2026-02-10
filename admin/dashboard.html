@@ -47,13 +47,13 @@
         <div class="sidebar-spacer"></div>
 
         <!-- Ícones “enfeite” no final -->
-        <button class="system-btn" title="Notificações">
+        <button class="system-btn" title="Notificações" type="button">
           <i class="fas fa-bell"></i>
         </button>
-        <button class="system-btn" title="Estatísticas">
+        <button class="system-btn" title="Estatísticas" type="button">
           <i class="fas fa-chart-bar"></i>
         </button>
-        <button class="system-btn" title="Configurações">
+        <button class="system-btn" title="Configurações" type="button">
           <i class="fas fa-cog"></i>
         </button>
       </nav>
@@ -62,16 +62,16 @@
     <!-- MAIN -->
     <main class="main-content">
       <header class="dashboard-header">
-        <!-- Logo + texto -->
+        <!-- Logo -->
         <div class="header-logo-section">
           <img class="header-logo-img" src="./assets/abcsoft_logo.png" alt="ABCSoft Lab" />
         </div>
 
         <nav class="department-tabs">
-          <button class="tab-btn active" data-department="usuarios">USUÁRIOS</button>
-          <button class="tab-btn" data-department="relatorios">RELATÓRIOS</button>
-          <button class="tab-btn" data-department="financas">FINANÇAS</button>
-          <button class="tab-btn" data-department="gestao">GESTÃO</button>
+          <button class="tab-btn active" data-department="usuarios" type="button">USUÁRIOS</button>
+          <button class="tab-btn" data-department="relatorios" type="button">RELATÓRIOS</button>
+          <button class="tab-btn" data-department="financas" type="button">FINANÇAS</button>
+          <button class="tab-btn" data-department="gestao" type="button">GESTÃO</button>
         </nav>
 
         <div class="user-section">
@@ -79,7 +79,7 @@
             <span class="user-name" id="userName">—</span>
             <span class="user-role">Administrador</span>
           </div>
-          <button class="logout-btn" id="logoutBtn" title="Sair">
+          <button class="logout-btn" id="logoutBtn" title="Sair" type="button">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
@@ -96,8 +96,8 @@
 
             <div class="panel-actions">
               <input id="searchInput" class="search" type="text" placeholder="Buscar por nome, CNPJ ou razão social..." />
-              <button id="refreshBtn" class="btn">Atualizar</button>
-              <button id="newBtn" class="btn primary">+ Novo</button>
+              <button id="refreshBtn" class="btn" type="button">Atualizar</button>
+              <button id="newBtn" class="btn primary" type="button">+ Novo</button>
             </div>
           </div>
 
@@ -132,8 +132,9 @@
     </main>
   </div>
 
-  <script src="./assets/config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./assets/dashboard.js"></script>
+  <!-- ORDEM CERTA + DEFER -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="./assets/config.js"></script>
+  <script defer src="./assets/dashboard.js"></script>
 </body>
 </html>

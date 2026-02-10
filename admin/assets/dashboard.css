@@ -346,3 +346,7 @@ html, body { width:100%; height:100%; font-family: var(--font-secondary); backgr
   .content-area{ padding: 18px 16px; }
   .search{ min-width: 220px; }
 }
+.overlay.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
