@@ -131,6 +131,81 @@
       </div>
     </main>
   </div>
+  
+  <!-- DRAWER: NOVO USUÁRIO (apenas UI, não muda estrutura atual) -->
+  <div id="drawerBackdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
+
+  <aside id="userDrawer" class="drawer hidden" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <h3>Novo usuário</h3>
+        <p>Preencha os dados do cliente</p>
+      </div>
+      <button id="drawerCloseBtn" class="icon-btn" type="button" title="Fechar">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form id="userForm" class="drawer-body">
+      <div class="grid">
+        <div class="field">
+          <label>Nome *</label>
+          <input id="f_name" type="text" placeholder="Nome do cliente" autocomplete="off" required />
+        </div>
+
+        <div class="field">
+          <label>E-mail *</label>
+          <input id="f_email" type="email" placeholder="email@dominio.com" autocomplete="off" required />
+        </div>
+
+        <div class="field">
+          <label>Senha *</label>
+          <div class="pw-wrap">
+            <input id="f_password" type="password" placeholder="Defina uma senha" autocomplete="new-password" required />
+            <button id="f_togglePw" class="pw-btn" type="button" title="Mostrar/ocultar senha">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <small class="hint">Por enquanto a senha é definitiva.</small>
+        </div>
+
+        <div class="field">
+          <label>Telefone</label>
+          <input id="f_phone" type="text" placeholder="(11) 99999-9999" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>CNPJ</label>
+          <input id="f_cnpj" type="text" placeholder="00.000.000/0000-00" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>Razão Social</label>
+          <input id="f_razao" type="text" placeholder="Razão social" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>Setor</label>
+          <input id="f_setor" type="text" placeholder="Ex.: Oficina, Construção..." autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>Créditos iniciais</label>
+          <input id="f_credits" type="text" inputmode="numeric" placeholder="0" autocomplete="off" value="0" />
+        </div>
+      </div>
+
+      <div id="formError" class="form-error hidden"></div>
+
+      <div class="drawer-actions">
+        <button id="cancelBtn" class="btn" type="button">Cancelar</button>
+        <button id="saveBtn" class="btn primary" type="submit">
+          <i class="fas fa-save"></i>
+          <span>Salvar</span>
+        </button>
+      </div>
+    </form>
+  </aside>
 
   <!-- ORDEM CERTA + DEFER -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
