@@ -166,20 +166,44 @@
     showOverlay();
 
     try {
-      // profiles + credits_balance (left join)
-      const { data, error } = await sb
+      // 1) Busca profiles
+      const { data: profiles, error: pErr } = await sb
         .from('profiles')
-        .select('user_id,name,email,phone,cnpj,razao_social,setor,credits_balance(balance)')
+        .select('user_id,name,email,phone,cnpj,razao_social,setor,created_at')
         .order('created_at', { ascending: false })
         .limit(500);
 
-      if (error) {
-        console.error(error);
-        renderUsersError(error);
+      if (pErr) {
+        console.error(pErr);
+        renderUsersError(pErr);
         return;
       }
 
-      _usersCache = (data || []).map((r) => ({
+      const list = profiles || [];
+
+      if (list.length === 0) {
+        _usersCache = [];
+        renderUsers(_usersCache);
+        return;
+      }
+
+      // 2) Busca credits_balance pros ids retornados
+      const ids = list.map((r) => r.user_id).filter(Boolean);
+
+      const { data: creditsRows, error: cErr } = await sb
+        .from('credits_balance')
+        .select('user_id,balance')
+        .in('user_id', ids);
+
+      if (cErr) {
+        // Se credits_balance estiver com RLS ou algo, ainda renderiza com 0
+        console.warn('credits_balance error:', cErr);
+      }
+
+      const creditsMap = new Map((creditsRows || []).map((r) => [r.user_id, r.balance ?? 0]));
+
+      // 3) Mescla no front
+      _usersCache = list.map((r) => ({
         user_id: r.user_id,
         name: r.name || '',
         email: r.email || '',
@@ -187,13 +211,13 @@
         cnpj: r.cnpj || '',
         razao_social: r.razao_social || '',
         setor: r.setor || '',
-        credits: (r.credits_balance && r.credits_balance.balance != null) ? r.credits_balance.balance : 0,
+        credits: creditsMap.get(r.user_id) ?? 0,
       }));
 
       renderUsers(_usersCache);
     } catch (e) {
       console.error(e);
-      renderUsersError({ message: String(e) });
+      renderUsersError({ message: String(e?.message || e) });
     } finally {
       hideOverlay();
     }
