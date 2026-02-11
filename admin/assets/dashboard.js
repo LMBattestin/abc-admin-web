@@ -289,8 +289,8 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // envia o JWT do admin (a função valida se está em public.admins)
         'Authorization': `Bearer ${token}`,
+        'apikey': cfg.SUPABASE_ANON_KEY,
       },
       body: JSON.stringify(payload),
     });

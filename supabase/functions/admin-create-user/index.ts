@@ -2,9 +2,9 @@
 // @ts-nocheck
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const CORS_HEADERS = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -13,111 +13,110 @@ const CORS_HEADERS = {
 function json(status: number, body: any) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders,
+    },
   });
 }
 
 serve(async (req) => {
   // ✅ Preflight CORS
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SERVICE_ROLE_KEY) {
+      return json(500, { error: "Missing function secrets" });
+    }
 
     const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    if (!token) return json(401, { error: "Missing bearer token" });
 
-    // 1) valida quem chamou (anon + bearer do admin)
-    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
+    // 1) valida caller (anon + bearer)
+    const caller = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: caller, error: callerErr } = await callerClient.auth.getUser();
-    if (callerErr || !caller?.user) return json(401, { error: "Invalid session" });
+    const { data: callerData, error: callerErr } = await caller.auth.getUser();
+    if (callerErr || !callerData?.user) {
+      return json(401, { error: "Not authenticated" });
+    }
 
-    // 2) service client (bypass RLS + create auth user)
-    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    // 2) service role
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 3) checa se caller é admin
-    const { data: adminRow, error: adminCheckErr } = await adminClient
+    // 3) valida admin
+    const { data: adminRow, error: adminErr } = await admin
       .from("admins")
       .select("user_id")
-      .eq("user_id", caller.user.id)
+      .eq("user_id", callerData.user.id)
       .maybeSingle();
 
-    if (adminCheckErr) return json(500, { error: adminCheckErr.message });
-    if (!adminRow) return json(403, { error: "Not authorized (admins only)" });
+    if (adminErr) return json(500, { error: adminErr.message });
+    if (!adminRow) return json(403, { error: "Forbidden (not admin)" });
 
     // 4) payload
-    const payload = await req.json();
-    const email = (payload?.email || "").toString().trim().toLowerCase();
-    const password = (payload?.password || "").toString();
-    const credits = Number(payload?.credits ?? 0) || 0;
+    const body = await req.json().catch(() => null);
+    const email = String(body?.email || "").trim().toLowerCase();
+    const password = String(body?.password || "");
+    const credits = Number(body?.credits ?? 0) || 0;
 
-    const profile = payload?.profile || {};
-    const name = (profile?.name || "").toString().trim();
-    const phone = profile?.phone ?? null;
-    const cnpj = profile?.cnpj ?? null;
-    const razao_social = profile?.razao_social ?? null;
-    const setor = profile?.setor ?? null;
+    const profile = body?.profile || {};
+    const name = String(profile?.name || body?.name || "").trim();
+    const phone = profile?.phone ?? body?.phone ?? null;
+    const cnpj = profile?.cnpj ?? body?.cnpj ?? null;
+    const razao_social = profile?.razao_social ?? body?.razao_social ?? null;
+    const setor = profile?.setor ?? body?.setor ?? null;
 
     if (!email) return json(400, { error: "Email is required" });
     if (!password || password.length < 6) return json(400, { error: "Password must be >= 6 chars" });
     if (!name) return json(400, { error: "Name is required" });
 
     // 5) cria usuário no AUTH
-    const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { name },
     });
 
-    if (createErr) return json(400, { error: createErr.message });
-    const userId = created.user?.id;
-    if (!userId) return json(500, { error: "Auth user id missing" });
+    if (createErr || !created?.user) {
+      return json(400, { error: createErr?.message || "Falha ao criar user" });
+    }
+
+    const user_id = created.user.id;
 
     // 6) upsert profile
-    const { error: profileErr } = await adminClient
-      .from("profiles")
-      .upsert(
-        {
-          user_id: userId,
-          name,
-          email,
-          phone,
-          cnpj,
-          razao_social,
-          setor,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+    const { error: pErr } = await admin.from("profiles").upsert(
+      {
+        user_id,
+        name,
+        email,
+        phone,
+        cnpj,
+        razao_social,
+        setor,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
+    if (pErr) return json(500, { error: pErr.message });
 
-    if (profileErr) return json(500, { error: profileErr.message });
+    // 7) upsert credits
+    const { error: cErr } = await admin.from("credits_balance").upsert(
+      { user_id, balance: credits, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    );
+    if (cErr) return json(500, { error: cErr.message });
 
-    // 7) upsert créditos
-    const { error: creditsErr } = await adminClient
-      .from("credits_balance")
-      .upsert(
-        {
-          user_id: userId,
-          balance: credits,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-
-    if (creditsErr) return json(500, { error: creditsErr.message });
-
-    return json(200, { ok: true, user_id: userId });
+    return json(200, { ok: true, user_id });
   } catch (e) {
     return json(500, { error: String(e?.message || e) });
   }
