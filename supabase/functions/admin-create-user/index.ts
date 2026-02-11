@@ -4,14 +4,25 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(status: number, body: any) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
 
 serve(async (req) => {
+  // ✅ Preflight CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
@@ -23,7 +34,7 @@ serve(async (req) => {
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
     if (!token) return json(401, { error: "Missing bearer token" });
 
-    // 1) valida quem chamou (com anon + bearer do admin)
+    // 1) valida quem chamou (anon + bearer do admin)
     const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
@@ -52,16 +63,16 @@ serve(async (req) => {
 
     const profile = payload?.profile || {};
     const name = (profile?.name || "").toString().trim();
-    const phone = (profile?.phone || null);
-    const cnpj = (profile?.cnpj || null);
-    const razao_social = (profile?.razao_social || null);
-    const setor = (profile?.setor || null);
+    const phone = profile?.phone ?? null;
+    const cnpj = profile?.cnpj ?? null;
+    const razao_social = profile?.razao_social ?? null;
+    const setor = profile?.setor ?? null;
 
     if (!email) return json(400, { error: "Email is required" });
     if (!password || password.length < 6) return json(400, { error: "Password must be >= 6 chars" });
     if (!name) return json(400, { error: "Name is required" });
 
-    // 5) cria usuário no AUTH (email_confirm true evita depender de confirmação)
+    // 5) cria usuário no AUTH
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -73,28 +84,36 @@ serve(async (req) => {
     const userId = created.user?.id;
     if (!userId) return json(500, { error: "Auth user id missing" });
 
-    // 6) grava/atualiza profile
+    // 6) upsert profile
     const { error: profileErr } = await adminClient
       .from("profiles")
-      .upsert({
-        user_id: userId,
-        name,
-        email,
-        phone,
-        cnpj,
-        razao_social,
-        setor,
-      }, { onConflict: "user_id" });
+      .upsert(
+        {
+          user_id: userId,
+          name,
+          email,
+          phone,
+          cnpj,
+          razao_social,
+          setor,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
 
     if (profileErr) return json(500, { error: profileErr.message });
 
-    // 7) grava/atualiza créditos
+    // 7) upsert créditos
     const { error: creditsErr } = await adminClient
       .from("credits_balance")
-      .upsert({
-        user_id: userId,
-        balance: credits,
-      }, { onConflict: "user_id" });
+      .upsert(
+        {
+          user_id: userId,
+          balance: credits,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
 
     if (creditsErr) return json(500, { error: creditsErr.message });
 
