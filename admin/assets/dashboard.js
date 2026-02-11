@@ -1,363 +1,376 @@
 // admin/assets/dashboard.js
 (function () {
-  const overlay = document.getElementById("overlay");
-  const userNameEl = document.getElementById("userName");
-  const logoutBtn = document.getElementById("logoutBtn");
+  'use strict';
 
-  const usersSection = document.getElementById("usersSection");
-  const placeholderSection = document.getElementById("placeholderSection");
-  const usersTbody = document.getElementById("usersTbody");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const searchInput = document.getElementById("searchInput");
-  const newBtn = document.getElementById("newBtn");
+  // ===== Helpers DOM =====
+  const $ = (id) => document.getElementById(id);
+  const qs = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  function showOverlay(on) {
-    overlay.classList.toggle("hidden", !on);
+  // ===== Overlay =====
+  const overlay = $('overlay');
+  function showOverlay() {
+    overlay?.classList.remove('hidden');
+    overlay?.setAttribute('aria-hidden', 'false');
+  }
+  function hideOverlay() {
+    overlay?.classList.add('hidden');
+    overlay?.setAttribute('aria-hidden', 'true');
   }
 
-  function maskCNPJ(v) {
-    const s = String(v || "").replace(/\D/g, "");
-    if (s.length !== 14) return v || "";
-    return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(
-      8,
-      12
-    )}-${s.slice(12, 14)}`;
-  }
-
-  function maskPhone(v) {
-    const s = String(v || "").replace(/\D/g, "");
-    if (!s) return "";
-    if (s.length === 11) return `(${s.slice(0, 2)}) ${s.slice(2, 7)}-${s.slice(7)}`;
-    if (s.length === 10) return `(${s.slice(0, 2)}) ${s.slice(2, 6)}-${s.slice(6)}`;
-    return v || "";
-  }
-
-  function safe(v) {
-    return String(v ?? "");
-  }
-
-  const cfg = window.ABC_ADMIN_CONFIG || {};
-  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-    document.body.innerHTML =
-      '<div style="padding:16px;color:#b00020;font-family:Arial">Config do Supabase ausente. Confira admin/assets/config.js</div>';
+  // ===== Config / Supabase =====
+  const cfg = window.ABC_ADMIN_CONFIG || null;
+  if (!cfg || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+    console.error('Config do Supabase ausente. Confira admin/assets/config.js');
     return;
   }
 
-  // cria UMA instância só (evita o warning de múltiplos GoTrueClient)
-  const supabase = window.__ABC_SB__
-    ? window.__ABC_SB__
-    : (window.__ABC_SB__ = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY));
+  // Evita criar múltiplos clients (aquele warning chato)
+  const sb = window.__ABC_SB__ || window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  window.__ABC_SB__ = sb;
 
-  let lastProfiles = [];
-  let lastBalancesMap = new Map();
+  // ===== UI refs =====
+  const usersSection = $('usersSection');
+  const placeholderSection = $('placeholderSection');
+  const newBtn = $('newBtn');
+  const refreshBtn = $('refreshBtn');
+  const searchInput = $('searchInput');
+  const usersTbody = $('usersTbody');
 
-  async function requireAuth() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) console.warn(error);
-    if (!data || !data.session) {
-      window.location.href = "./index.html";
-      return null;
-    }
-    return data.session;
+  // Drawer
+  const drawer = $('userDrawer');
+  const drawerBackdrop = $('drawerBackdrop');
+  const drawerCloseBtn = $('drawerCloseBtn');
+  const cancelBtn = $('cancelBtn');
+  const userForm = $('userForm');
+  const formError = $('formError');
+
+  const f_name = $('f_name');
+  const f_email = $('f_email');
+  const f_password = $('f_password');
+  const f_togglePw = $('f_togglePw');
+  const f_phone = $('f_phone');
+  const f_cnpj = $('f_cnpj');
+  const f_razao = $('f_razao');
+  const f_setor = $('f_setor');
+  const f_credits = $('f_credits');
+
+  const logoutBtn = $('logoutBtn');
+  const userNameEl = $('userName');
+
+  // ===== Mask utils =====
+  function onlyDigits(v) { return (v || '').replace(/\D+/g, ''); }
+
+  function maskCNPJ(v) {
+    const d = onlyDigits(v).slice(0, 14);
+    // 00.000.000/0000-00
+    const p1 = d.slice(0, 2);
+    const p2 = d.slice(2, 5);
+    const p3 = d.slice(5, 8);
+    const p4 = d.slice(8, 12);
+    const p5 = d.slice(12, 14);
+    let out = p1;
+    if (p2) out += '.' + p2;
+    if (p3) out += '.' + p3;
+    if (p4) out += '/' + p4;
+    if (p5) out += '-' + p5;
+    return out;
   }
 
-  function showUsersUI() {
-    placeholderSection.classList.add("hidden");
-    usersSection.classList.remove("hidden");
+  function maskPhoneBR(v) {
+    const d = onlyDigits(v).slice(0, 11);
+    // (11) 99999-9999 ou (11) 9999-9999
+    const ddd = d.slice(0, 2);
+    const rest = d.slice(2);
+    if (!ddd) return '';
+    if (rest.length <= 4) return `(${ddd}) ${rest}`;
+    if (rest.length <= 8) return `(${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+    return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`;
   }
 
-  async function loadUsers() {
-    showOverlay(true);
+  function maskInt(v) {
+    const d = onlyDigits(v);
+    return d ? String(parseInt(d, 10)) : '0';
+  }
+
+  // ===== Drawer control =====
+  function openDrawer() {
+    clearFormError();
+    drawer?.classList.remove('hidden');
+    drawerBackdrop?.classList.remove('hidden');
+    drawer?.setAttribute('aria-hidden', 'false');
+    drawerBackdrop?.setAttribute('aria-hidden', 'false');
+
+    // reset (mas mantém créditos default)
+    if (userForm) userForm.reset();
+    if (f_credits) f_credits.value = '0';
+    setTimeout(() => f_name?.focus(), 50);
+  }
+
+  function closeDrawer() {
+    drawer?.classList.add('hidden');
+    drawerBackdrop?.classList.add('hidden');
+    drawer?.setAttribute('aria-hidden', 'true');
+    drawerBackdrop?.setAttribute('aria-hidden', 'true');
+  }
+
+  function setFormError(msg) {
+    if (!formError) return;
+    formError.textContent = msg || '';
+    formError.classList.remove('hidden');
+  }
+
+  function clearFormError() {
+    if (!formError) return;
+    formError.textContent = '';
+    formError.classList.add('hidden');
+  }
+
+  // ===== Tabs / sections =====
+  function showUsersPanel() {
+    usersSection?.classList.remove('hidden');
+    placeholderSection?.classList.add('hidden');
+  }
+
+  function showPlaceholder() {
+    usersSection?.classList.add('hidden');
+    placeholderSection?.classList.remove('hidden');
+  }
+
+  // ===== Load session / auth guard =====
+  async function initAuth() {
+    showOverlay();
     try {
-      const { data: profiles, error: pErr } = await supabase
-        .from("profiles")
-        .select("user_id,name,email,phone,cnpj,razao_social,created_at,updated_at")
-        .order("created_at", { ascending: false })
-        .limit(500);
+      const { data: { session }, error } = await sb.auth.getSession();
+      if (error) console.warn('getSession error:', error);
 
-      if (pErr) throw pErr;
-
-      const ids = (profiles || []).map((p) => p.user_id).filter(Boolean);
-
-      const balancesMap = new Map();
-      if (ids.length) {
-        const { data: balances, error: bErr } = await supabase
-          .from("credits_balance")
-          .select("user_id,balance,updated_at")
-          .in("user_id", ids);
-
-        if (bErr) throw bErr;
-
-        (balances || []).forEach((b) => balancesMap.set(b.user_id, b.balance ?? 0));
+      if (!session) {
+        // Se não tem sessão, manda pra login (mantém teu fluxo atual)
+        window.location.href = './index.html';
+        return;
       }
 
-      lastProfiles = profiles || [];
-      lastBalancesMap = balancesMap;
-
-      renderUsers(lastProfiles, lastBalancesMap);
-    } catch (e) {
-      console.error(e);
-      usersTbody.innerHTML =
-        '<tr><td colspan="8" class="muted">Erro ao carregar. Veja Console (F12).</td></tr>';
+      // Puxa nome do perfil do admin (se tiver)
+      userNameEl.textContent = session.user?.email || 'Admin';
+      showUsersPanel();
+      await loadUsers();
     } finally {
-      showOverlay(false);
+      hideOverlay();
     }
   }
 
-  function renderUsers(rows, balancesMap) {
-    const q = (searchInput.value || "").trim().toLowerCase();
+  // ===== Data load (profiles + credits_balance) =====
+  let _usersCache = [];
+  async function loadUsers() {
+    clearFormError();
+    showOverlay();
 
-    const filtered = rows.filter((r) => {
-      const name = safe(r.name).toLowerCase();
-      const cnpj = safe(r.cnpj).toLowerCase();
-      const razao = safe(r.razao_social).toLowerCase();
-      if (!q) return true;
-      return name.includes(q) || cnpj.includes(q) || razao.includes(q);
-    });
+    try {
+      // profiles + credits_balance (left join)
+      const { data, error } = await sb
+        .from('profiles')
+        .select('user_id,name,email,phone,cnpj,razao_social,setor,credits_balance(balance)')
+        .order('created_at', { ascending: false })
+        .limit(500);
 
-    if (!filtered.length) {
-      usersTbody.innerHTML =
-        '<tr><td colspan="8" class="muted">Nenhum usuário encontrado.</td></tr>';
+      if (error) {
+        console.error(error);
+        renderUsersError(error);
+        return;
+      }
+
+      _usersCache = (data || []).map((r) => ({
+        user_id: r.user_id,
+        name: r.name || '',
+        email: r.email || '',
+        phone: r.phone || '',
+        cnpj: r.cnpj || '',
+        razao_social: r.razao_social || '',
+        setor: r.setor || '',
+        credits: (r.credits_balance && r.credits_balance.balance != null) ? r.credits_balance.balance : 0,
+      }));
+
+      renderUsers(_usersCache);
+    } catch (e) {
+      console.error(e);
+      renderUsersError({ message: String(e) });
+    } finally {
+      hideOverlay();
+    }
+  }
+
+  function renderUsersError(err) {
+    if (!usersTbody) return;
+    const msg = (err && err.message) ? err.message : 'Erro ao carregar';
+    usersTbody.innerHTML = `<tr><td colspan="8" class="muted">Erro ao carregar: ${escapeHtml(msg)}</td></tr>`;
+  }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function renderUsers(list) {
+    if (!usersTbody) return;
+
+    if (!list || list.length === 0) {
+      usersTbody.innerHTML = `<tr><td colspan="8" class="muted">Nenhum usuário encontrado.</td></tr>`;
       return;
     }
 
-    usersTbody.innerHTML = filtered
-      .map((r) => {
-        const credits = balancesMap.get(r.user_id) ?? 0;
-        return `
+    usersTbody.innerHTML = list.map((u) => {
+      return `
         <tr>
-          <td>${safe(r.name)}</td>
-          <td>${maskCNPJ(r.cnpj)}</td>
-          <td>${safe(r.razao_social)}</td>
-          <td>${safe(r.email)}</td>
-          <td>${maskPhone(r.phone)}</td>
-          <td><strong>${credits}</strong></td>
-          <td>${safe(r.user_id)}</td>
-          <td>
-            <button class="action-btn action-edit" data-id="${safe(r.user_id)}" title="Editar"><i class="fas fa-pen"></i></button>
-            <button class="action-btn action-del" data-id="${safe(r.user_id)}" title="Excluir"><i class="fas fa-trash"></i></button>
-          </td>
+          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.cnpj)}</td>
+          <td>${escapeHtml(u.razao_social)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td>${escapeHtml(u.phone)}</td>
+          <td>${escapeHtml(String(u.credits ?? 0))}</td>
+          <td class="muted">${escapeHtml(u.user_id)}</td>
+          <td class="muted">—</td>
         </tr>
       `;
-      })
-      .join("");
-
-    usersTbody.querySelectorAll(".action-edit").forEach((btn) => {
-      btn.addEventListener("click", () => onEdit(btn.dataset.id));
-    });
-    usersTbody.querySelectorAll(".action-del").forEach((btn) => {
-      btn.addEventListener("click", () => onDelete(btn.dataset.id));
-    });
+    }).join('');
   }
 
-  function findUserById(id) {
-    return lastProfiles.find((p) => p.user_id === id) || null;
-  }
-
-  async function onEdit(id) {
-    const row = findUserById(id);
-    if (!row) return alert("Usuário não encontrado.");
-
-    const namePrompt = prompt("Nome:", row.name || "");
-    if (namePrompt === null) return;
-    const name = namePrompt;
-
-    const cnpjPrompt = prompt("CNPJ:", row.cnpj || "");
-    if (cnpjPrompt === null) return;
-    const cnpj = cnpjPrompt;
-
-    const razaoPrompt = prompt("Razão Social:", row.razao_social || "");
-    if (razaoPrompt === null) return;
-    const razao_social = razaoPrompt;
-
-    const phonePrompt = prompt("Telefone:", row.phone || "");
-    if (phonePrompt === null) return;
-    const phone = phonePrompt;
-
-    const currentCredits = lastBalancesMap.get(id) ?? 0;
-    const creditsStr = prompt("Créditos:", String(currentCredits));
-    if (creditsStr === null) return;
-
-    const credits = Number(creditsStr);
-    if (!Number.isFinite(credits)) return alert("Créditos inválidos.");
-
-    showOverlay(true);
-    try {
-      const { error: pErr } = await supabase
-        .from("profiles")
-        .update({
-          name,
-          cnpj: cnpj || null,
-          razao_social: razao_social || null,
-          phone: phone || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", id);
-
-      if (pErr) throw pErr;
-
-      const { error: bErr } = await supabase
-        .from("credits_balance")
-        .upsert(
-          { user_id: id, balance: credits, updated_at: new Date().toISOString() },
-          { onConflict: "user_id" }
-        );
-
-      if (bErr) throw bErr;
-
-      await loadUsers();
-    } catch (e) {
-      console.error(e);
-      alert("Falha ao salvar. Veja o Console (F12).");
-    } finally {
-      showOverlay(false);
+  function applyFilter() {
+    const q = (searchInput?.value || '').trim().toLowerCase();
+    if (!q) {
+      renderUsers(_usersCache);
+      return;
     }
+    const filtered = _usersCache.filter((u) => {
+      return (
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.cnpj || '').toLowerCase().includes(q) ||
+        (u.razao_social || '').toLowerCase().includes(q)
+      );
+    });
+    renderUsers(filtered);
   }
 
-  async function onDelete(id) {
-    if (!confirm("Excluir este usuário? (Remove do painel, não apaga do Auth ainda)")) return;
+  // ===== Create user (Auth + DB) via Edge Function =====
+  async function createUserViaEdge(payload) {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Sessão inválida. Faça login novamente.');
 
-    showOverlay(true);
-    try {
-      const { error: pErr } = await supabase.from("profiles").delete().eq("user_id", id);
-      if (pErr) throw pErr;
-
-      const { error: bErr } = await supabase.from("credits_balance").delete().eq("user_id", id);
-      if (bErr) throw bErr;
-
-      await loadUsers();
-    } catch (e) {
-      console.error(e);
-      alert("Falha ao excluir. Veja o Console (F12).");
-    } finally {
-      showOverlay(false);
-    }
-  }
-
-  async function createUserViaEdgeFunction(session, payload) {
     const url = `${cfg.SUPABASE_URL}/functions/v1/admin-create-user`;
-
     const res = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: cfg.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        // envia o JWT do admin (a função valida se está em public.admins)
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
 
-    let out = {};
-    try {
-      out = await res.json();
-    } catch {}
+    const txt = await res.text();
+    let json = null;
+    try { json = txt ? JSON.parse(txt) : null; } catch {}
 
     if (!res.ok) {
-      const msg = out.error || out.message || "Falha ao criar usuário.";
+      const msg = (json && (json.error || json.message)) ? (json.error || json.message) : (txt || `HTTP ${res.status}`);
       throw new Error(msg);
     }
-    return out;
+    return json;
   }
 
-  async function onCreate(session) {
-    const email = (prompt("Email do novo usuário:") || "").trim();
-    if (!email) return;
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '');
+  }
 
-    const password = prompt("Senha (mínimo 6 caracteres):") || "";
-    if (password.length < 6) return alert("Senha curta demais (mínimo 6).");
+  // ===== Bindings =====
+  newBtn?.addEventListener('click', () => openDrawer());
+  drawerCloseBtn?.addEventListener('click', () => closeDrawer());
+  cancelBtn?.addEventListener('click', () => closeDrawer());
+  drawerBackdrop?.addEventListener('click', () => closeDrawer());
 
-    const name = prompt("Nome:", "") || "";
-    const cnpj = prompt("CNPJ (opcional):", "") || "";
-    const razao_social = prompt("Razão Social (opcional):", "") || "";
-    const phone = prompt("Telefone (opcional):", "") || "";
-    const creditsStr = prompt("Créditos iniciais (opcional):", "0") || "0";
-    const credits = Number(creditsStr) || 0;
+  refreshBtn?.addEventListener('click', () => loadUsers());
+  searchInput?.addEventListener('input', () => applyFilter());
 
-    showOverlay(true);
+  f_togglePw?.addEventListener('click', () => {
+    if (!f_password) return;
+    f_password.type = (f_password.type === 'password') ? 'text' : 'password';
+    const icon = qs('i', f_togglePw);
+    if (icon) icon.className = (f_password.type === 'password') ? 'fas fa-eye' : 'fas fa-eye-slash';
+  });
+
+  f_cnpj?.addEventListener('input', () => { f_cnpj.value = maskCNPJ(f_cnpj.value); });
+  f_phone?.addEventListener('input', () => { f_phone.value = maskPhoneBR(f_phone.value); });
+  f_credits?.addEventListener('input', () => { f_credits.value = maskInt(f_credits.value); });
+
+  // Logout (mantém simples)
+  logoutBtn?.addEventListener('click', async () => {
+    if (!confirm('Desconectar?')) return;
+    showOverlay();
     try {
-      await createUserViaEdgeFunction(session, {
+      await sb.auth.signOut();
+      window.location.href = './index.html';
+    } finally {
+      hideOverlay();
+    }
+  });
+
+  // Submit
+  userForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError();
+
+    const name = (f_name?.value || '').trim();
+    const email = (f_email?.value || '').trim().toLowerCase();
+    const password = (f_password?.value || '').trim();
+
+    const phone = (f_phone?.value || '').trim();
+    const cnpj = (f_cnpj?.value || '').trim();
+    const razao_social = (f_razao?.value || '').trim();
+    const setor = (f_setor?.value || '').trim();
+    const credits = parseInt(maskInt(f_credits?.value || '0'), 10) || 0;
+
+    if (!name) return setFormError('Nome é obrigatório.');
+    if (!email || !validateEmail(email)) return setFormError('E-mail inválido.');
+    if (!password || password.length < 6) return setFormError('Senha deve ter pelo menos 6 caracteres.');
+
+    showOverlay();
+    try {
+      await createUserViaEdge({
         email,
         password,
-        name,
-        cnpj,
-        razao_social,
-        phone,
+        profile: { name, email, phone, cnpj, razao_social, setor },
         credits,
       });
-      alert("Usuário criado! Agora já pode logar no app.");
+
+      closeDrawer();
       await loadUsers();
-    } catch (e) {
-      console.error(e);
-      alert(String(e.message || e));
+    } catch (err) {
+      console.error(err);
+      setFormError(err?.message || 'Erro ao salvar.');
     } finally {
-      showOverlay(false);
+      hideOverlay();
     }
-  }
+  });
 
-  function setupNav(session) {
-    document.querySelectorAll(".software-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".software-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-      });
-    });
+  // Init UI for department tabs (mantém tua navegação simples)
+  qsa('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      qsa('.tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
 
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const dept = btn.getAttribute("data-department");
-        if (dept === "usuarios") {
-          showUsersUI();
-          await loadUsers();
-        } else {
-          usersSection.classList.add("hidden");
-          placeholderSection.classList.remove("hidden");
-          const t = placeholderSection.querySelector(".placeholder-title");
-          const p = placeholderSection.querySelector(".placeholder-text");
-          if (t) t.textContent = "Em breve";
-          if (p) p.textContent = "Essa seção será implementada depois.";
-        }
-      });
-    });
-
-    refreshBtn.addEventListener("click", () => loadUsers());
-
-    searchInput.addEventListener("input", () => {
-      renderUsers(lastProfiles, lastBalancesMap);
-    });
-
-    newBtn.addEventListener("click", () => onCreate(session));
-  }
-
-  async function boot() {
-    showOverlay(true);
-
-    const session = await requireAuth();
-    if (!session) return;
-
-    userNameEl.textContent = (session.user && session.user.email) ? session.user.email : "admin";
-
-    logoutBtn.addEventListener("click", async () => {
-      showOverlay(true);
-      try {
-        await supabase.auth.signOut();
-      } finally {
-        window.location.href = "./index.html";
+      const dep = btn.getAttribute('data-department');
+      if (dep === 'usuarios') {
+        showUsersPanel();
+      } else {
+        showPlaceholder();
       }
     });
-
-    setupNav(session);
-
-    showUsersUI();
-    await loadUsers();
-
-    showOverlay(false);
-  }
-
-  boot().catch((err) => {
-    console.error(err);
-    showOverlay(false);
   });
+
+  // Init
+  initAuth();
 })();
